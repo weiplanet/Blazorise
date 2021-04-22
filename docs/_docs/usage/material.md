@@ -26,7 +26,7 @@ Install-Package Blazorise.Icons.Material
 
 ### 2. Download CSS
 
-Material CSS is not available through the CDN so you must download it yourself from [daemonite](http://daemonite.github.io/material/) web page. After the download is finished just must extract the _CSS_ and _JS_ to the **wwwroot** folder inside of you Blazor project.
+Material CSS is not available through the CDN so you must download it yourself from [djibe](https://djibe.github.io/material/) web page. After the download is finished just must extract the _CSS_ and _JS_ to the **wwwroot** folder inside of you Blazor project.
 
 The folder structure should be:
 
@@ -105,13 +105,9 @@ public class Program
       BaseAddress = new Uri( builder.HostEnvironment.BaseAddress )
     } );
 
-    builder.RootComponents.Add<App>( "app" );
+    builder.RootComponents.Add<App>( "#app" );
 
     var host = builder.Build();
-
-    host.Services
-      .UseMaterialProviders()
-      .UseMaterialIcons();
 
     await host.RunAsync();
   }
@@ -147,10 +143,6 @@ public class Startup
     
     app.UseRouting();
     
-    app.ApplicationServices
-      .UseMaterialProviders()
-      .UseMaterialIcons();
-
     app.UseEndpoints( endpoints =>
     {
         endpoints.MapBlazorHub();

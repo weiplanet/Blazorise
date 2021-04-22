@@ -51,20 +51,26 @@ namespace Blazorise.Bootstrap
             var yiqActiveBackground = Var( ThemeVariables.ButtonYiqActiveBackground( variant ) );
             var boxShadow = Var( ThemeVariables.ButtonBoxShadow( variant ) );
 
-            sb.Append( $".btn-{variant}" ).Append( "{" )
+            sb.Append( $".btn-{variant}," )
+                .Append( $"a.btn-{variant}" )
+                .Append( "{" )
                 .Append( $"color: {yiqBackground};" )
                 .Append( GetGradientBg( theme, background, options?.GradientBlendPercentage ) )
                 .Append( $"border-color: {border};" )
                 .AppendLine( "}" );
 
-            sb.Append( $".btn-{variant}:hover" ).Append( "{" )
+            sb.Append( $".btn-{variant}:hover," )
+                .Append( $"a.btn-{variant}:hover" )
+                .Append( "{" )
                 .Append( $"color: {yiqHoverBackground};" )
                 .Append( GetGradientBg( theme, hoverBackground, options?.GradientBlendPercentage ) )
                 .Append( $"border-color: {hoverBorder};" )
                 .AppendLine( "}" );
 
             sb.Append( $".btn-{variant}:focus," )
-                .Append( $".btn-{variant}.focus" )
+                .Append( $".btn-{variant}.focus," )
+                .Append( $"a.btn-{variant}:focus," )
+                .Append( $"a.btn-{variant}.focus" )
                 .Append( "{" )
                 .Append( $"color: {yiqHoverBackground};" )
                 .Append( GetGradientBg( theme, hoverBackground, options?.GradientBlendPercentage ) )
@@ -73,7 +79,9 @@ namespace Blazorise.Bootstrap
                 .AppendLine( "}" );
 
             sb.Append( $".btn-{variant}.disabled," )
-                .Append( $".btn-{variant}:disabled" )
+                .Append( $".btn-{variant}:disabled," )
+                .Append( $"a.btn-{variant}.disabled," )
+                .Append( $"a.btn-{variant}:disabled" )
                 .Append( "{" )
                 .Append( $"color: {yiqBackground};" )
                 .Append( $"background-color: {background};" )
@@ -84,7 +92,10 @@ namespace Blazorise.Bootstrap
             sb
                 .Append( $".btn-{variant}:not(:disabled):not(.disabled):active," )
                 .Append( $".btn-{variant}:not(:disabled):not(.disabled).active," )
-                .Append( $".show>.btn-{variant}.dropdown-toggle" )
+                .Append( $".show>.btn-{variant}.dropdown-toggle," )
+                .Append( $"a.btn-{variant}:not(:disabled):not(.disabled):active," )
+                .Append( $"a.btn-{variant}:not(:disabled):not(.disabled).active," )
+                .Append( $"a.show>.btn-{variant}.dropdown-toggle" )
                 .Append( "{" )
                 .Append( $"color: {yiqActiveBackground};" )
                 .Append( $"background-color: {activeBackground};" )
@@ -94,7 +105,10 @@ namespace Blazorise.Bootstrap
             sb
                 .Append( $".btn-{variant}:not(:disabled):not(.disabled):active:focus," )
                 .Append( $".btn-{variant}:not(:disabled):not(.disabled).active:focus," )
-                .Append( $".show>.btn-{variant}.dropdown-toggle:focus" )
+                .Append( $".show>.btn-{variant}.dropdown-toggle:focus," )
+                .Append( $"a.btn-{variant}:not(:disabled):not(.disabled):active:focus," )
+                .Append( $"a.btn-{variant}:not(:disabled):not(.disabled).active:focus," )
+                .Append( $"a.show>.btn-{variant}.dropdown-toggle:focus" )
                 .Append( "{" )
                 .Append( $"box-shadow: 0 0 0 {options?.BoxShadowSize ?? ".2rem"} {boxShadow}" )
                 .AppendLine( "}" );
@@ -106,25 +120,37 @@ namespace Blazorise.Bootstrap
             var yiqColor = Var( ThemeVariables.OutlineButtonYiqColor( variant ) );
             var boxShadow = Var( ThemeVariables.OutlineButtonBoxShadowColor( variant ) );
 
-            sb.Append( $".btn-outline-{variant}" ).Append( "{" )
+            sb
+                .Append( $".btn-outline-{variant}," )
+                .Append( $"a.btn-outline-{variant}" )
+                .Append( "{" )
                 .Append( $"color: {color};" )
                 .Append( $"border-color: {color};" )
                 .AppendLine( "}" );
 
-            sb.Append( $".btn-outline-{variant}:hover" ).Append( "{" )
+            sb
+                .Append( $".btn-outline-{variant}:hover," )
+                .Append( $"a.btn-outline-{variant}:hover" )
+                .Append( "{" )
                 .Append( $"color: {yiqColor};" )
                 .Append( $"background-color: {color};" )
                 .Append( $"border-color: {color};" )
                 .AppendLine( "}" );
 
-            sb.Append( $".btn-outline-{variant}:focus," )
-                .Append( $".btn-outline-{variant}.focus" )
+            sb
+                .Append( $".btn-outline-{variant}:focus," )
+                .Append( $".btn-outline-{variant}.focus," )
+                .Append( $"a.btn-outline-{variant}:focus," )
+                .Append( $"a.btn-outline-{variant}.focus" )
                 .Append( "{" )
                 .Append( $"box-shadow: 0 0 0 {options?.BoxShadowSize ?? ".2rem"} {boxShadow};" )
                 .AppendLine( "}" );
 
-            sb.Append( $".btn-outline-{variant}.disabled," )
-                .Append( $".btn-outline-{variant}:disabled" )
+            sb
+                .Append( $".btn-outline-{variant}.disabled," )
+                .Append( $".btn-outline-{variant}:disabled," )
+                .Append( $"a.btn-outline-{variant}.disabled," )
+                .Append( $"a.btn-outline-{variant}:disabled" )
                 .Append( "{" )
                 .Append( $"color: {color};" )
                 .Append( $"background-color: transparent;" )
@@ -133,7 +159,10 @@ namespace Blazorise.Bootstrap
             sb
                 .Append( $".btn-outline-{variant}:not(:disabled):not(.disabled):active," )
                 .Append( $".btn-outline-{variant}:not(:disabled):not(.disabled).active," )
-                .Append( $".show>.btn-outline-{variant}.dropdown-toggle" )
+                .Append( $".show>.btn-outline-{variant}.dropdown-toggle," )
+                .Append( $"a.btn-outline-{variant}:not(:disabled):not(.disabled):active," )
+                .Append( $"a.btn-outline-{variant}:not(:disabled):not(.disabled).active," )
+                .Append( $"a.show>.btn-outline-{variant}.dropdown-toggle" )
                 .Append( "{" )
                 .Append( $"color: {yiqColor};" )
                 .Append( $"background-color: {color};" )
@@ -143,7 +172,10 @@ namespace Blazorise.Bootstrap
             sb
                 .Append( $".btn-outline-{variant}:not(:disabled):not(.disabled):active:focus," )
                 .Append( $".btn-outline-{variant}:not(:disabled):not(.disabled).active:focus," )
-                .Append( $".show>.btn-outline-{variant}.dropdown-toggle:focus" )
+                .Append( $".show>.btn-outline-{variant}.dropdown-toggle:focus," )
+                .Append( $"a.btn-outline-{variant}:not(:disabled):not(.disabled):active:focus," )
+                .Append( $"a.btn-outline-{variant}:not(:disabled):not(.disabled).active:focus," )
+                .Append( $"a.show>.btn-outline-{variant}.dropdown-toggle:focus" )
                 .Append( "{" )
                 .Append( $"box-shadow: 0 0 0 {options?.BoxShadowSize ?? ".2rem"} {boxShadow};" )
                 .AppendLine( "}" );
@@ -187,10 +219,12 @@ namespace Blazorise.Bootstrap
                 if ( !backgroundColor.IsEmpty )
                 {
                     var background = ToHex( backgroundColor );
+                    var color = ToHex( Contrast( theme, background ) );
 
                     sb.Append( $".dropdown-item.active," )
                         .Append( $".dropdown-item:active" ).Append( "{" )
                         .Append( GetGradientBg( theme, background, options?.GradientBlendPercentage ) )
+                        .Append( $"color: {color} !important;" )
                         .AppendLine( "}" );
                 }
             }
@@ -277,6 +311,113 @@ namespace Blazorise.Bootstrap
                 .AppendLine( "}" );
         }
 
+        protected override void GenerateSwitchVariantStyles( StringBuilder sb, Theme theme, string variant, string inBackgroundColor, ThemeSwitchOptions options )
+        {
+            var backgroundColor = ParseColor( inBackgroundColor );
+
+            if ( backgroundColor.IsEmpty )
+                return;
+
+            var boxShadowColor = Lighten( backgroundColor, options?.BoxShadowLightenColor ?? 25 );
+            var disabledBackgroundColor = Lighten( backgroundColor, options?.DisabledLightenColor ?? 50 );
+
+            var background = ToHex( backgroundColor );
+            var boxShadow = ToHex( boxShadowColor );
+            var disabledBackground = ToHex( disabledBackgroundColor );
+
+            sb
+                .Append( $".custom-switch .custom-control-input.custom-control-input-{variant}:checked ~ .custom-control-label::before" ).Append( "{" )
+                .Append( $"background-color: {background};" )
+                .Append( $"border-color: {background};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".custom-switch .custom-control-input.custom-control-input-{variant}:focus ~ .custom-control-label::before" ).Append( "{" )
+                .Append( $"box-shadow: {boxShadow};" )
+                .Append( $"border-color: {background};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".custom-switch .custom-control-input:disabled.custom-control-input-{variant}:checked ~ .custom-control-label::before" ).Append( "{" )
+                .Append( $"background-color: {disabledBackground};" )
+                .AppendLine( "}" );
+        }
+
+        protected override void GenerateStepsStyles( StringBuilder sb, Theme theme, ThemeStepsOptions stepsOptions )
+        {
+            sb
+                .Append( $".step-completed .step-circle" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.White )};" )
+                .Append( $"background-color: {Var( ThemeVariables.StepsItemIconCompleted, Var( ThemeVariables.Color( "success" ) ) )};" )
+                .Append( $"border-color: {Var( ThemeVariables.StepsItemIconCompleted, Var( ThemeVariables.Color( "success" ) ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".step-completed .step-circle::before" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.StepsItemIconCompleted, Var( ThemeVariables.Color( "success" ) ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".step-completed .step-text" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.StepsItemTextCompleted, Var( ThemeVariables.Color( "success" ) ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".step-active .step-circle" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.White )};" )
+                .Append( $"background-color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )};" )
+                .Append( $"border-color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".step-active .step-text" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.StepsItemTextActive, Var( ThemeVariables.Color( "primary" ) ) )};" )
+                .AppendLine( "}" );
+        }
+
+        protected override void GenerateStepsVariantStyles( StringBuilder sb, Theme theme, string variant, string inBackgroundColor, ThemeStepsOptions stepsOptions )
+        {
+            sb
+                .Append( $".step-{variant} .step-circle" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.VariantStepsItemIcon( variant ) )};" )
+                .Append( $"border-color: {Var( ThemeVariables.VariantStepsItemIcon( variant ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".step-{variant}.step-completed .step-circle" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.VariantStepsItemIconYiq( variant ) )};" )
+                .Append( $"background-color: {Var( ThemeVariables.VariantStepsItemIcon( variant ) )};" )
+                .Append( $"border-color: {Var( ThemeVariables.VariantStepsItemIcon( variant ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".step-{variant}.step-completed .step-circle::before" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.VariantStepsItemIcon( variant ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".step-{variant}.step-completed .step-text" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.VariantStepsItemText( variant ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".step-{variant}.step-active .step-circle" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.StepsItemIconActiveYiq, Var( ThemeVariables.White ) )};" )
+                .Append( $"background-color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )};" )
+                .Append( $"border-color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".step-{variant}.step-active::before" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".step-{variant}.step-active .step-text" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )};" )
+                .AppendLine( "}" );
+        }
+
         protected override void GenerateAlertVariantStyles( StringBuilder sb, Theme theme, string variant, string inBackgroundColor, string inBorderColor, string inColor, ThemeAlertOptions options )
         {
             var backgroundColor = ParseColor( inBackgroundColor );
@@ -326,13 +467,13 @@ namespace Blazorise.Bootstrap
                 .Append( $"border-color: {border};" )
                 .AppendLine( "}" );
 
-            sb.Append( $".table-hover table-{variant}:hover" )
+            sb.Append( $".table-hover .table-{variant}:hover" )
                 .Append( "{" )
                 .Append( $"background-color: {hoverBackground};" )
                 .AppendLine( "}" );
 
-            sb.Append( $".table-hover table-{variant}:hover>td" )
-                .Append( $".table-hover table-{variant}:hover>th" )
+            sb.Append( $".table-hover .table-{variant}:hover>td," )
+                .Append( $".table-hover .table-{variant}:hover>th" )
                 .Append( "{" )
                 .Append( $"background-color: {hoverBackground};" )
                 .AppendLine( "}" );
@@ -398,6 +539,8 @@ namespace Blazorise.Bootstrap
                     .Append( $"background-color: {Var( ThemeVariables.Color( "primary" ) )};" )
                     .AppendLine( "}" );
             }
+
+            base.GenerateProgressStyles( sb, theme, options );
         }
 
         protected override void GenerateAlertStyles( StringBuilder sb, Theme theme, ThemeAlertOptions options )
@@ -483,7 +626,7 @@ namespace Blazorise.Bootstrap
 
             sb.Append( $".text-{variant}" )
                 .Append( "{" )
-                .Append( $"color: {textColorHex};" )
+                .Append( $"color: {textColorHex} !important;" )
                 .AppendLine( "}" );
         }
 

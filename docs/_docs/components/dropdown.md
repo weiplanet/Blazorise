@@ -41,7 +41,7 @@ Just add another `Button` to have a split dropdown.
 ```html
 <Dropdown>
     <Button>Split Dropdown</Button>
-    <DropdownToggle IsSplit="true"/>
+    <DropdownToggle Split="true"/>
     <DropdownMenu>
         <DropdownItem>Action</DropdownItem>
         <DropdownDivider />
@@ -94,6 +94,7 @@ By default a dropdown toggle will open and close a dropdown menu without the nee
 |----------------|------------------------------------------------------------------------|-----------|--------------------------------------------------------------------------------------------------------------------------------|
 | Visible        | boolean                                                                | false     | Handles the visibility of dropdown menu.                                                                                       |
 | RightAligned   | boolean                                                                | false     | Right aligned dropdown menu.                                                                                                   |
+| Disabled       | boolean                                                                | false     | Disabled the button or toggle button that are placed inside of dropdown.                                                       |
 | Direction      | [Direction]({{ "/docs/helpers/enums/#direction" | relative_url }})     | `Down`    | Direction of an dropdown menu.                                                                                                 |
 | Toggled        | event                                                                  |           | Occurs after the dropdown menu visibility has changed.                                                                         |
 
@@ -109,12 +110,15 @@ By default a dropdown toggle will open and close a dropdown menu without the nee
 |----------------|------------------------------------------------------------------------|-----------|--------------------------------------------------------------------------------------------------------------------------------|
 | Value          | object                                                                 | null      | Holds the item value.                                                                                                          |
 | Clicked        | event                                                                  |           | Occurs when the item is clicked.                                                                                               |
+| Active         | boolean                                                                | false     | Marks the item with an state.                                                                                                  |
+| Disabled       | boolean                                                                | false     | Marks the item with disabled state and doesn't allow the click event.                                                          |
 
 ### DropdownToggle
 
 | Name           | Type                                                                   | Default   | Description                                                                                                                    |
 |----------------|------------------------------------------------------------------------|-----------|--------------------------------------------------------------------------------------------------------------------------------|
 | Color          | [Colors]({{ "/docs/helpers/colors/#color" | relative_url }})           | `None`    | Component visual or contextual style variants.                                                                                 |
-| Size           | [ButtonSize]({{ "/docs/helpers/sizes/#buttonsize" | relative_url }})   | `None`    | Button size variations.                                                                                                        |
+| Size           | [Size]({{ "/docs/helpers/sizes/#size" | relative_url }})               | `None`    | Button size variations.                                                                                                        |
 | Split          | boolean                                                                | false     | Handles the visibility of split button.                                                                                        |
 | Outline        | boolean                                                                | false     | Outlined button                                                                                                                |
+| Disabled       | boolean                                                                | false     | Makes toggle look inactive.                                                                                                    |

@@ -1,5 +1,6 @@
 ﻿#region Using directives
 using System;
+using System.Threading.Tasks;
 using Blazorise.Tests.Mocks;
 using Microsoft.AspNetCore.Components;
 using Xunit;
@@ -60,10 +61,10 @@ namespace Blazorise.Tests
             var button = new Button();
 
             // test
-            button.Size = ButtonSize.Small;
+            button.Size = Size.Small;
 
             // validate
-            Assert.Equal( ButtonSize.Small, button.Size );
+            Assert.Equal( Size.Small, button.Size );
         }
 
         [Fact]
@@ -108,7 +109,7 @@ namespace Blazorise.Tests
         }
 
         [Fact]
-        public void ClickWithEventCallback()
+        public async Task ClickWithEventCallback()
         {
             // setup
             var button = new MockButton();
@@ -116,14 +117,14 @@ namespace Blazorise.Tests
 
             // test
             button.Clicked = callbackFactory.Create( this, () => { clicked = true; } );
-            button.Click();
+            await button.Click();
 
             // validate
             Assert.True( clicked );
         }
 
         [Fact]
-        public void ClickWithCommand()
+        public async Task ClickWithCommand()
         {
             // setup
             var button = new MockButton();
@@ -132,7 +133,7 @@ namespace Blazorise.Tests
             button.CommandParameter = "foo";
 
             // test
-            button.Click();
+            await button.Click();
 
             // validate
             Assert.NotNull( result );

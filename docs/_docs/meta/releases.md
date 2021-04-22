@@ -6,6 +6,18 @@ toc: true
 toc_label: "Version history"
 ---
 
+## 0.9.3
+
+### Changes
+
+For detail description of changes please look at [v0.9.3 release page]({{ "/news/release-notes/093/" | relative_url }})
+
+## 0.9.2
+
+### Changes
+
+For detail description of changes please look at [v0.9.2 release page]({{ "/news/release-notes/092/" | relative_url }})
+
 ## 0.9.1.2
 
 ### Changes
@@ -587,12 +599,6 @@ For detail description of changes please look at [v0.8 release page]({{ "/docs/r
     services
       .AddBootstrapProviders()
       .AddFontAwesomeIcons();
-  }
-
-  public void Configure( IComponentsApplicationBuilder app ) {
-    app
-      .UseBootstrapProviders()
-      .UseFontAwesomeIcons();
   }
   ```
 

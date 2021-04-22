@@ -1,17 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Blazorise.Bootstrap;
 using Blazorise.Icons.FontAwesome;
-using System.Reflection;
-using Microsoft.AspNetCore.Components.Server;
+using Blazorise.RichTextEdit;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Blazorise.Demo.Bootstrap.RC
 {
@@ -25,6 +18,11 @@ namespace Blazorise.Demo.Bootstrap.RC
                 .AddBlazorise( options =>
                 {
                     options.ChangeTextOnKeyPress = true;
+                } )
+                .AddBlazoriseRichTextEdit( options =>
+                {
+                    options.UseBubbleTheme = true;
+                    options.UseShowTheme = true;
                 } )
                 .AddBootstrapProviders()
                 .AddFontAwesomeIcons();
@@ -55,10 +53,6 @@ namespace Blazorise.Demo.Bootstrap.RC
             app.UseStaticFiles();
 
             app.UseRouting();
-
-            app.ApplicationServices
-                .UseBootstrapProviders()
-                .UseFontAwesomeIcons();
 
             // this is required to be here or otherwise the messages between server and client will be too large and
             // the connection will be lost.

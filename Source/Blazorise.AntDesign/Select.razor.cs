@@ -2,8 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
-using Blazorise.Utils;
+using Blazorise.Utilities;
+using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 #endregion
 
@@ -12,6 +14,10 @@ namespace Blazorise.AntDesign
     public partial class Select<TValue> : Blazorise.Select<TValue>, ICloseActivator
     {
         #region Members
+
+        private string selectorElementId;
+
+        private string inputElementId;
 
         /// <summary>
         /// Holds the information about the element location and size.
@@ -24,6 +30,7 @@ namespace Blazorise.AntDesign
         /// </summary>
         private DotNetObjectReference<CloseActivatorAdapter> dotNetObjectRef;
 
+
         /// <summary>
         /// Internal string separator for selected values when Multiple mode is used.
         /// </summary>
@@ -35,7 +42,7 @@ namespace Blazorise.AntDesign
 
         protected override async Task OnFirstAfterRenderAsync()
         {
-            dotNetObjectRef ??= JSRunner.CreateDotNetObjectRef( new CloseActivatorAdapter( this ) );
+            dotNetObjectRef ??= CreateDotNetObjectRef( new CloseActivatorAdapter( this ) );
 
             await base.OnFirstAfterRenderAsync();
         }
@@ -47,7 +54,7 @@ namespace Blazorise.AntDesign
                 // TODO: switch to IAsyncDisposable
                 _ = JSRunner.UnregisterClosableComponent( this );
 
-                JSRunner.DisposeDotNetObjectRef( dotNetObjectRef );
+                DisposeDotNetObjectRef( dotNetObjectRef );
             }
 
             base.Dispose( disposing );
@@ -61,7 +68,7 @@ namespace Blazorise.AntDesign
             await Expand();
         }
 
-        public Task<bool> IsSafeToClose( string elementId, CloseReason closeReason )
+        public Task<bool> IsSafeToClose( string elementId, CloseReason closeReason, bool isChildClicked )
         {
             return Task.FromResult( Multiple
                 ? closeReason == CloseReason.EscapeClosing || elementId == ElementId || elementId == SelectorElementId || elementId == InputElementId
@@ -72,7 +79,7 @@ namespace Blazorise.AntDesign
         {
             await Collapse();
 
-            StateHasChanged();
+            await InvokeAsync( StateHasChanged );
         }
 
         private async Task Expand()
@@ -82,7 +89,7 @@ namespace Blazorise.AntDesign
             // when validation is trigered the input can be pushed down by the error messages.
             elementInfo = await JSRunner.GetElementInfo( ElementRef, ElementId );
 
-            await JSRunner.RegisterClosableComponent( dotNetObjectRef, ElementId );
+            await JSRunner.RegisterClosableComponent( dotNetObjectRef, ElementRef );
 
             Expanded = true;
         }
@@ -92,6 +99,12 @@ namespace Blazorise.AntDesign
             await JSRunner.UnregisterClosableComponent( this );
 
             Expanded = false;
+        }
+
+        private void ClearSelectedItems()
+        {
+            SelectedValue = default;
+            SelectedValues = default;
         }
 
         protected Task OnMultipleValueClickHandler( TValue selectValue )
@@ -127,7 +140,7 @@ namespace Blazorise.AntDesign
                 await Collapse();
             }
 
-            StateHasChanged();
+            await InvokeAsync( StateHasChanged );
         }
 
         protected override Task<ParseValue<IReadOnlyList<TValue>>> ParseValueFromStringAsync( string value )
@@ -168,27 +181,114 @@ namespace Blazorise.AntDesign
             }
         }
 
+        protected Task RemoveSelectedItem( TValue value )
+        {
+            return NotifySelectValueChanged( value );
+        }
+
+        protected Task OnSelectClearClickHandler()
+        {
+            ClearSelectedItems();
+
+            return Task.CompletedTask;
+        }
+
         #endregion
 
         #region Properties
 
         protected bool Expanded { get; set; }
 
-        protected string SelectorElementId { get; set; } = IDGenerator.Instance.Generate;
+        protected string SelectorElementId
+        {
+            get => selectorElementId ??= IdGenerator.Generate;
+            set => selectorElementId = value;
+        }
 
-        protected string InputElementId { get; set; } = IDGenerator.Instance.Generate;
+        protected string InputElementId
+        {
+            get => inputElementId ??= IdGenerator.Generate;
+            set => inputElementId = value;
+        }
+
+        /// <summary>
+        /// Gets the selected items render fragments.
+        /// </summary>
+        protected IEnumerable<RenderFragment> SelectedItems
+        {
+            get
+            {
+                foreach ( var selectedValue in SelectedValues )
+                {
+                    var item = SelectItems.FirstOrDefault( i => Convert.ToString( i.Value ) == Convert.ToString( selectedValue ) );
+
+                    if ( item != null )
+                    {
+                        yield return item.ChildContent;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the render fragment for the selected option.
+        /// </summary>
+        protected RenderFragment SelectedItem
+        {
+            get
+            {
+                if ( SelectedValue != null )
+                {
+                    var item = SelectItems.FirstOrDefault( i => Convert.ToString( i.Value ) == Convert.ToString( SelectedValue ) );
+
+                    return item?.ChildContent;
+                }
+
+                return null;
+            }
+        }
 
         string SelectListId =>
             $"select_list_{ElementId}";
 
-        string ContainerClassNames =>
-            $"{ClassNames} {( Multiple ? "ant-select-multiple" : "ant-select-single" )} ant-select-show-arrow {( Expanded ? "ant-select-open" : "" )}";
+        string ContainerClassNames
+        {
+            get
+            {
+                var sb = new StringBuilder( "ant-select ant-select-show-arrow" );
 
-        string DropdownClassNames =>
-            $"ant-select-dropdown ant-select-dropdown-placement-bottomLeft {( Expanded ? "" : "ant-select-dropdown-hidden" )}";
+                if ( Multiple )
+                    sb.Append( " ant-select-multiple" );
+                else
+                    sb.Append( " ant-select-single" );
+
+                if ( Expanded )
+                    sb.Append( " ant-select-open" );
+
+                if ( Disabled )
+                    sb.Append( " ant-select-disabled" );
+
+                return sb.ToString();
+            }
+        }
+
+        string DropdownClassNames
+        {
+            get
+            {
+                var sb = new StringBuilder( "ant-select-dropdown ant-select-dropdown-placement-bottomLeft" );
+
+                if ( Expanded )
+                    sb.Append( " slide-up-enter slide-up-enter-active slide-up" );
+                else
+                    sb.Append( " slide-up-leave slide-up-leave-active slide-up" );
+
+                return sb.ToString();
+            }
+        }
 
         string DropdownStyleNames =>
-            $"width: {(int)elementInfo.BoundingClientRect.Width}px; left: {(int)elementInfo.OffsetLeft}px; top: {(int)( elementInfo.OffsetTop + elementInfo.BoundingClientRect.Height )}px;";
+                $"width: {(int)elementInfo.BoundingClientRect.Width}px; left: {(int)elementInfo.OffsetLeft}px; top: {(int)( elementInfo.OffsetTop + elementInfo.BoundingClientRect.Height )}px;";
 
         string DropdownInnerStyleNames
             => $"max-height: {( MaxVisibleItems == null ? 256 : MaxVisibleItems * 32 )}px; overflow-y: auto; overflow-anchor: none;";

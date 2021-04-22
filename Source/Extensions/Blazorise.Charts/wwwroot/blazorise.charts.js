@@ -108,6 +108,14 @@ window.blazoriseCharts = {
         }
     },
 
+    setData: (canvasId, datasetIndex, newData) => {
+        const chart = window.blazoriseCharts.getChart(canvasId);
+
+        if (chart) {
+            chart.data.datasets[datasetIndex].data = newData;
+        }
+    },
+
     addDatasetsAndUpdate: (canvasId, newDatasets) => {
         const chart = window.blazoriseCharts.getChart(canvasId);
 
@@ -133,6 +141,38 @@ window.blazoriseCharts = {
             });
 
             chart.update();
+        }
+    },
+
+    shiftLabel: (canvasId) => {
+        const chart = window.blazoriseCharts.getChart(canvasId);
+
+        if (chart) {
+            chart.data.labels.shift();
+        }
+    },
+
+    shiftData: (canvasId, datasetIndex) => {
+        const chart = window.blazoriseCharts.getChart(canvasId);
+
+        if (chart) {
+            chart.data.datasets[datasetIndex].data.shift();
+        }
+    },
+
+    popLabel: (canvasId) => {
+        const chart = window.blazoriseCharts.getChart(canvasId);
+
+        if (chart) {
+            chart.data.labels.pop();
+        }
+    },
+
+    popData: (canvasId, datasetIndex) => {
+        const chart = window.blazoriseCharts.getChart(canvasId);
+
+        if (chart) {
+            chart.data.datasets[datasetIndex].data.pop();
         }
     },
 

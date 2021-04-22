@@ -1,10 +1,13 @@
 ﻿@layout RootLayout
 @inherits LayoutComponentBase
-
+@using System.Globalization
+@using Blazorise.Localization
 <Layout Sider="true">
     <LayoutSider>
         <LayoutSiderContent>
-            <Bar Breakpoint="Breakpoint.Desktop" NavigationBreakpoint="Breakpoint.Tablet" ThemeContrast="ThemeContrast.Dark" Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small" @bind-Visible="siderVisible">
+            <Bar Breakpoint="Breakpoint.Desktop" NavigationBreakpoint="Breakpoint.Tablet" ThemeContrast="ThemeContrast.Dark"
+                 Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small">
+                <BarToggler />
                 <BarBrand>
                     <BarItem>
                         <BarLink To="">
@@ -59,6 +62,9 @@
                                     <BarDropdownItem To="tests/tabs">
                                         Tabs
                                     </BarDropdownItem>
+                                    <BarDropdownItem To="tests/steps">
+                                        Steps
+                                    </BarDropdownItem>
                                     <BarDropdownItem To="tests/carousel">
                                         Carousel
                                     </BarDropdownItem>
@@ -81,6 +87,22 @@
                                     <BarDropdownItem To="tests/validations">
                                         Validations
                                     </BarDropdownItem>
+                                    <BarDropdownItem To="tests/misc-forms">
+                                        Misc
+                                    </BarDropdownItem>
+                                    <BarDropdown>
+                                        <BarDropdownToggle>
+                                            Nested Forms
+                                        </BarDropdownToggle>
+                                        <BarDropdownMenu>
+                                            <BarDropdownItem To="tests/forms">
+                                                Nested Forms
+                                            </BarDropdownItem>
+                                            <BarDropdownItem To="tests/validations">
+                                                Nested Validations
+                                            </BarDropdownItem>
+                                        </BarDropdownMenu>
+                                    </BarDropdown>
                                 </BarDropdownMenu>
                             </BarDropdown>
                         </BarItem>
@@ -105,6 +127,9 @@
                                     </BarDropdownItem>
                                     <BarDropdownItem To="tests/treeview">
                                         TreeView
+                                    </BarDropdownItem>
+                                    <BarDropdownItem To="tests/richtextedit">
+                                        RichTextEdit
                                     </BarDropdownItem>
                                 </BarDropdownMenu>
                             </BarDropdown>
@@ -131,7 +156,7 @@
     </LayoutSider>
     <Layout>
         <LayoutHeader Fixed="true">
-            <Bar Style="height: 64px;" Breakpoint="Breakpoint.Desktop" Background="Background.Primary" ThemeContrast="ThemeContrast.Light">
+            <Bar @bind-Visible="@topbarVisible" Breakpoint="Breakpoint.Desktop" Background="Background.Primary" ThemeContrast="ThemeContrast.Light">
                 <BarBrand>
                     <BarItem>
                         <BarLink To="">
@@ -140,7 +165,7 @@
                         </BarLink>
                     </BarItem>
                 </BarBrand>
-                <BarToggler Clicked="@ToggleSidebar" />
+                <BarToggler />
                 <BarMenu>
                     <BarStart>
                         <BarItem>
@@ -164,6 +189,26 @@
                         </BarItem>
                     </BarStart>
                     <BarEnd>
+                        <BarItem>
+                            <BarDropdown>
+                                <BarDropdownToggle><Icon Name="IconName.Language" /></BarDropdownToggle>
+                                <BarDropdownMenu RightAligned="true">
+                                    @foreach ( var cultureInfo in LocalizationService.AvailableCultures )
+                                    {
+                                        <BarDropdownItem @key="@cultureInfo.Name" Clicked="@(()=>SelectCulture(cultureInfo.Name))">
+                                            @if ( cultureInfo.IsNeutralCulture )
+                                            {
+                                                @cultureInfo.EnglishName;
+                                            }
+                                            else
+                                            {
+                                                @cultureInfo.Parent.EnglishName;
+                                            }
+                                        </BarDropdownItem>
+                                    }
+                                </BarDropdownMenu>
+                            </BarDropdown>
+                        </BarItem>
                         <BarItem>
                             <BarDropdown>
                                 <BarDropdownToggle><Icon Name="IconName.Tint" /> Theme</BarDropdownToggle>
@@ -209,6 +254,22 @@
 </Layout>
 
 @code{
+    [Inject] protected ITextLocalizerService LocalizationService { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SelectCulture( "en-US" );
+
+        await base.OnInitializedAsync();
+    }
+
+    Task SelectCulture( string name )
+    {
+        LocalizationService.ChangeLanguage( name );
+
+        return Task.CompletedTask;
+    }
+
     void OnThemeEnabledChanged( bool value )
     {
         if ( Theme == null )
@@ -272,17 +333,10 @@
         Theme.ThemeHasChanged();
     }
 
-
-    private bool siderVisible = true;
+    private bool topbarVisible = false;
     private bool uiElementsVisible = true;
 
+    [CascadingParameter] protected Theme Theme { get; set; }
+
     RenderFragment customIcon =@<img src="/brand-logo.png" style="width:32px; height: 32px" />;
-
-void ToggleSidebar()
-{
-siderVisible = !siderVisible;
-StateHasChanged();
-}
-
-[CascadingParameter] protected Theme Theme { get; set; }
 }

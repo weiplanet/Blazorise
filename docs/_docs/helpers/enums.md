@@ -39,6 +39,7 @@ Defines the button type and behavior.
 - `Button` The button is a clickable button.
 - `Submit` The button is a submit button (submits form-data).
 - `Reset` The button is a reset button (resets the form-data to its initial values).
+- `Link` The button will be rendered as a link but will appear as a regular button.
 
 ## Cursor
 
@@ -129,6 +130,22 @@ Defines the placement of an element.
 - `EndsWith` search only the ending
 - `Equals` search must match the entire value
 - `NotEquals` opposite of Equals
+
+## DataGridSortMode
+
+- `Single` The data grid can only be sorted by one column at a time.
+- `Multiple` The data grid can sorted by multiple columns.
+
+## DataGridSelectionMode
+
+- `Single` The data grid only supports a row selected at a time.
+- `Multiple` The data grid enables multiple rows to be selected.
+
+## DataGridCommandMode
+
+- `Default` Default state which means that both defined commands and button row will render.
+- `Commands` Only defined commands will render.
+- `ButtonRow` Only button row will render.
 
 ## TextAlignment
 
@@ -246,3 +263,35 @@ Defines the `Bar` state when collapsed (only works with `Vertical` bar modes)
 
 - `Hide` - collapses to be completely hidden
 - `Small` - collapse to behave like `BarMode.VerticalSmall`
+
+## Target
+
+The target attribute specifies where to open the linked document.
+
+- `None` - No target will be applied. Usually this is the same as `Self`.
+- `Self` - Opens the linked document in the same frame as it was clicked (this is default)
+- `Blank` - Opens the linked document in a new window or tab.
+- `Parent` - Opens the linked document in the parent frame.
+- `Top` - Opens the linked document in the full body of the window.
+
+
+## DateInputMode
+
+Hints at the type of data that might be entered into DateEdit by the user while editing the element or its contents.
+
+- `Date` - Only date is allowed to be entered.
+- `DateTime` - Both date and time are allowed to be entered.
+
+## Orientation
+
+Defines the orientation of the elements.
+
+- `Horizontal` - Elements will be stacked horizontally.
+- `Vertical` - - Elements will be stacked vertically.
+
+## DataGridResizeMode
+
+Defines the resize mode of the data grid columns.
+
+- `Header` - The data grid can only be resized from the columns header.
+- `Columns` - The data grid can be resized from the entire column area.

@@ -1,10 +1,7 @@
 ﻿#region Using directives
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
+using System.Text;
 using Blazorise.DataGrid.Utils;
 using Microsoft.AspNetCore.Components;
 #endregion
@@ -19,6 +16,8 @@ namespace Blazorise.DataGrid
         private readonly Lazy<Func<object>> defaultValueByType;
         private readonly Lazy<Func<TItem, object>> valueGetter;
         private readonly Lazy<Action<TItem, object>> valueSetter;
+
+        private Dictionary<DataGridSortMode, SortDirection> currentDirection { get; set; } = new Dictionary<DataGridSortMode, SortDirection>();
 
         #endregion
 
@@ -44,39 +43,35 @@ namespace Blazorise.DataGrid
                 // connect column to the parent datagrid
                 ParentDataGrid.Hook( this );
 
-                if ( FilterTemplate != null )
+                if ( Filter != null )
                 {
-                    InitializeFilterContext();
+                    Filter.Subscribe( OnSearchValueChanged );
                 }
             }
 
             // initialize temporary variables
-            CurrentDirection = Direction;
+            currentDirection[DataGridSortMode.Single] = Direction;
+            currentDirection[DataGridSortMode.Multiple] = Direction;
 
             base.OnInitialized();
         }
 
-        public void Dispose()
+        protected override void Dispose( bool disposing )
         {
-            if ( FilterContext != null )
+            if ( disposing )
             {
-                FilterContext.Unsubscribe( OnFilterValueChanged );
+                if ( Filter != null )
+                {
+                    Filter.Unsubscribe( OnSearchValueChanged );
 
-                FilterContext = null;
+                    Filter = null;
+                }
             }
+
+            base.Dispose( disposing );
         }
 
-        private void InitializeFilterContext()
-        {
-            FilterContext = new FilterContext
-            {
-                SearchValue = Filter.SearchValue
-            };
-
-            FilterContext.Subscribe( OnFilterValueChanged );
-        }
-
-        public async void OnFilterValueChanged( string filterValue )
+        public async void OnSearchValueChanged( string filterValue )
         {
             await ParentDataGrid.OnFilterChanged( this, filterValue );
         }
@@ -116,9 +111,86 @@ namespace Blazorise.DataGrid
             return FormatDisplayValue( GetValue( item ) );
         }
 
+        public bool CellValuesAreEditable()
+        {
+            return Editable &&
+                ( ( CellsEditableOnNewCommand && ParentDataGrid.EditState == DataGridEditState.New )
+                || ( CellsEditableOnEditCommand && ParentDataGrid.EditState == DataGridEditState.Edit ) );
+        }
+
+        internal string BuildHeaderCellStyle()
+        {
+            var sb = new StringBuilder();
+
+            if ( !string.IsNullOrEmpty( HeaderCellStyle ) )
+                sb.Append( HeaderCellStyle );
+
+            if ( Width != null )
+                sb.Append( $"; width: {Width};" );
+
+            return sb.ToString().TrimStart( ' ', ';' );
+        }
+
+        internal string BuildFilterCellStyle()
+        {
+            var sb = new StringBuilder();
+
+            if ( !string.IsNullOrEmpty( FilterCellStyle ) )
+                sb.Append( FilterCellStyle );
+
+            if ( Width != null )
+                sb.Append( $"; width: {Width};" );
+
+            return sb.ToString().TrimStart( ' ', ';' );
+        }
+
+        internal string BuildGroupCellStyle()
+        {
+            var sb = new StringBuilder();
+
+            if ( !string.IsNullOrEmpty( GroupCellStyle ) )
+                sb.Append( GroupCellStyle );
+
+            if ( Width != null )
+                sb.Append( $"; width: {Width};" );
+
+            return sb.ToString().TrimStart( ' ', ';' );
+        }
+
+        internal string BuildCellStyle( TItem item )
+        {
+            var sb = new StringBuilder();
+
+            var result = CellStyle?.Invoke( item );
+
+            if ( !string.IsNullOrEmpty( result ) )
+                sb.Append( result );
+
+            if ( Width != null )
+                sb.Append( $"; width: {Width}" );
+
+            return sb.ToString().TrimStart( ' ', ';' );
+        }
+
         #endregion
 
         #region Properties
+
+        internal bool IsDisplayable => ColumnType == DataGridColumnType.Command || ColumnType == DataGridColumnType.MultiSelect;
+
+        internal bool ExcludeFromFilter => ColumnType == DataGridColumnType.Command || ColumnType == DataGridColumnType.MultiSelect;
+
+        internal bool ExcludeFromEdit => ColumnType == DataGridColumnType.Command || ColumnType == DataGridColumnType.MultiSelect;
+
+        internal bool ExcludeFromInit => ColumnType == DataGridColumnType.Command || ColumnType == DataGridColumnType.MultiSelect;
+
+        /// <summary>
+        /// Returns true if the cell value is editable.
+        /// </summary>
+        public bool CellValueIsEditable
+            => Editable &&
+            ( ( CellsEditableOnNewCommand && ParentDataGrid.EditState == DataGridEditState.New )
+            || ( CellsEditableOnEditCommand && ParentDataGrid.EditState == DataGridEditState.Edit ) );
 
         /// <summary>
         /// Gets or sets the current sort direction.
@@ -127,17 +199,30 @@ namespace Blazorise.DataGrid
         /// The reason for this field is that <see cref="Direction"/> is reseted every
         /// time when the grid is refreshed by the user.
         /// </remarks>
-        internal SortDirection CurrentDirection { get; set; }
+        internal SortDirection CurrentDirection
+        {
+            get => currentDirection[ParentDataGrid.SortMode];
+            set => currentDirection[ParentDataGrid.SortMode] = value;
+        }
 
         /// <summary>
         /// Gets the type of column editor.
         /// </summary>
         public virtual DataGridColumnType ColumnType { get; } = DataGridColumnType.Text;
 
+        public bool IsMultiSelectColumn => ColumnType == DataGridColumnType.MultiSelect;
+
+        public bool IsCommandColumn => ColumnType == DataGridColumnType.Command;
+
         /// <summary>
-        /// Gets or sets the column's display caption
+        /// Gets or sets the column's display caption.
         /// </summary>
         [Parameter] public string Caption { get; set; }
+
+        /// <summary>
+        /// Gets or sets the column's display caption template.
+        /// </summary>
+        [Parameter] public RenderFragment<DataGridColumn<TItem>> CaptionTemplate { get; set; }
 
         /// <summary>
         /// Filter value for this column.
@@ -151,9 +236,19 @@ namespace Blazorise.DataGrid
         [Parameter] public SortDirection Direction { get; set; }
 
         /// <summary>
+        /// Gets or sets the column's display sort direction template.
+        /// </summary>
+        [Parameter] public RenderFragment<SortDirection> SortDirectionTemplate { get; set; }
+
+        /// <summary>
         /// Defines the alignment for display cell.
         /// </summary>
         [Parameter] public TextAlignment TextAlignment { get; set; }
+
+        /// <summary>
+        /// Defines the alignment for column header cell.
+        /// </summary>
+        [Parameter] public TextAlignment HeaderTextAlignment { get; set; }
 
         /// <summary>
         /// Gets or sets whether users can edit cell values under this column.
@@ -164,6 +259,16 @@ namespace Blazorise.DataGrid
         /// Gets or sets whether column can be displayed on a grid.
         /// </summary>
         [Parameter] public bool Displayable { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets where column will be displayed on a grid.
+        /// </summary>
+        [Parameter] public int DisplayOrder { get; set; }
+
+        /// <summary>
+        /// Gets or sets where column will be displayed on edit row/popup.
+        /// </summary>
+        [Parameter] public int? EditOrder { get; set; }
 
         /// <summary>
         /// Allows the cell values to be entered while the grid is in the new-item state.
@@ -250,12 +355,26 @@ namespace Blazorise.DataGrid
         /// </summary>
         [Parameter] public RenderFragment<FilterContext> FilterTemplate { get; set; }
 
-        internal FilterContext FilterContext { get; set; }
+        /// <summary>
+        /// Defines the size of field for popup modal.
+        /// </summary>
+        [Parameter] public IFluentColumn PopupFieldColumnSize { get; set; } = ColumnSize.IsHalf.OnDesktop;
 
         /// <summary>
         /// Template for custom cell editing.
         /// </summary>
-        [Parameter] public RenderFragment<CellEditContext> EditTemplate { get; set; }
+        [Parameter] public RenderFragment<CellEditContext<TItem>> EditTemplate { get; set; }
+
+        /// <summary>
+        /// Validates the input value after trying to save.
+        /// </summary>
+        [Parameter]
+        public Action<ValidatorEventArgs> Validator { get; set; }
+
+        /// <summary>
+        /// Forces validation to use regex pattern matching instead of default validator handler.
+        /// </summary>
+        [Parameter] public string ValidationPattern { get; set; }
 
         #endregion
     }

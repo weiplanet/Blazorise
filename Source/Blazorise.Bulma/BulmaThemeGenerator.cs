@@ -16,7 +16,7 @@ namespace Blazorise.Bulma
                 .Append( $"background-color: {Var( ThemeVariables.BackgroundColor( variant ) )} !important;" )
                 .AppendLine( "}" );
 
-            sb.Append( $".hero-{variant}" ).Append( "{" )
+            sb.Append( $".hero.is-{variant}" ).Append( "{" )
                 .Append( $"background-color: {Var( ThemeVariables.BackgroundColor( variant ) )} !important;" )
                 .Append( $"color: {ToHex( Contrast( theme, Var( ThemeVariables.BackgroundColor( variant ) ) ) )} !important;" )
                 .AppendLine( "}" );
@@ -165,6 +165,29 @@ namespace Blazorise.Bulma
             sb.Append( $".textarea" ).Append( "{" )
                 .Append( $"border-radius: {GetBorderRadius( theme, options?.BorderRadius, Var( ThemeVariables.BorderRadius ) )};" )
                 .AppendLine( "}" );
+
+            if ( !string.IsNullOrEmpty( options?.CheckColor ) )
+            {
+                GenerateInputCheckEditStyles( sb, theme, options );
+            }
+        }
+
+        protected virtual void GenerateInputCheckEditStyles( StringBuilder sb, Theme theme, ThemeInputOptions options )
+        {
+            sb
+                .Append( $".is-checkradio[type=\"checkbox\"] + label::after, .is-checkradio[type=\"checkbox\"] + label:after" ).Append( "{" )
+                .Append( $"border-color: {options.CheckColor};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".is-checkradio[type=\"radio\"] + label::after, .is-checkradio[type=\"radio\"] + label:after" ).Append( "{" )
+                .Append( $"background: {options.CheckColor};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".is-checkradio[type=\"radio\"]:hover:not([disabled]) + label::before, .is-checkradio[type=\"radio\"]:hover:not([disabled]) + label:before, .is-checkradio[type=\"checkbox\"]:hover:not([disabled]) + label::before, .is-checkradio[type=\"checkbox\"]:hover:not([disabled]) + label:before" ).Append( "{" )
+                .Append( $"border-color: {options.CheckColor} !important;" )
+                .AppendLine( "}" );
         }
 
         protected override void GenerateBadgeVariantStyles( StringBuilder sb, Theme theme, string variant, string inBackgroundColor )
@@ -182,6 +205,93 @@ namespace Blazorise.Bulma
             sb.Append( $".tag:not(body).is-{variant}" ).Append( "{" )
                 .Append( $"color: {yiqBackground};" )
                 .Append( $"background-color: {background};" )
+                .AppendLine( "}" );
+        }
+
+        protected override void GenerateSwitchVariantStyles( StringBuilder sb, Theme theme, string variant, string inBackgroundColor, ThemeSwitchOptions options )
+        {
+            var backgroundColor = ParseColor( inBackgroundColor );
+
+            if ( backgroundColor.IsEmpty )
+                return;
+
+            //var boxShadowColor = Lighten( backgroundColor, options?.BoxShadowLightenColor ?? 25 );
+            var disabledBackgroundColor = Lighten( backgroundColor, options?.DisabledLightenColor ?? 50 );
+
+            var background = ToHex( backgroundColor );
+            //var boxShadow = ToHex( boxShadowColor );
+            var disabledBackground = ToHex( disabledBackgroundColor );
+
+            sb
+                .Append( $".switch[type=\"checkbox\"].is-{variant}:checked + label::before," )
+                .Append( $".switch[type=\"checkbox\"].is-{variant}:checked + label:before" ).Append( "{" )
+                .Append( $"background-color: {background};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".switch[type=\"checkbox\"]:disabled.is-{variant}:checked + label::before" ).Append( "{" )
+                .Append( $"background-color: {disabledBackground};" )
+                .AppendLine( "}" );
+        }
+
+        protected override void GenerateStepsStyles( StringBuilder sb, Theme theme, ThemeStepsOptions stepsOptions )
+        {
+            sb
+                .Append( $".steps .step-item.is-completed::before" ).Append( "{" )
+                .Append( $"background-position: left bottom;" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".steps .step-item.is-completed .step-marker" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.White )};" )
+                .Append( $"background-color: {Var( ThemeVariables.StepsItemIconCompleted, Var( ThemeVariables.Color( "success" ) ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".steps .step-item.is-active.is-completed .step-marker," )
+                .Append( $".steps .step-item.is-active .step-marker" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.White )};" )
+                .Append( $"background-color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )};" )
+                .AppendLine( "}" );
+        }
+
+        protected override void GenerateStepsVariantStyles( StringBuilder sb, Theme theme, string variant, string inBackgroundColor, ThemeStepsOptions stepsOptions )
+        {
+            sb
+                .Append( $".steps .step-item.is-{variant}::before" ).Append( "{" )
+                .Append( $"background: linear-gradient(to left, #dbdbdb 50%, {Var( ThemeVariables.VariantStepsItemIcon( variant ) )} 50%);" )
+                .Append( $"background-size: 200% 100%;" )
+                .Append( $"background-position: right bottom;" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".steps .step-item.is-{variant} .step-marker" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.VariantStepsItemIconYiq( variant ) )};" )
+                .Append( $"background-color: {Var( ThemeVariables.VariantStepsItemIcon( variant ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".steps .step-item.is-{variant}.is-completed::before" ).Append( "{" )
+                .Append( $"background-position: left bottom;" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".steps .step-item.is-{variant}.is-completed .step-marker" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.StepsItemIconCompletedYiq )};" )
+                .Append( $"background-color: {Var( ThemeVariables.StepsItemIconCompleted )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".steps .step-item.is-{variant}.is-active::before" ).Append( "{" )
+                .Append( $"background-position: left bottom;" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".steps .step-item.is-{variant}.is-active.is-completed .step-marker," )
+                .Append( $".steps .step-item.is-{variant}.is-active .step-marker" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.StepsItemIconActiveYiq, Var( ThemeVariables.White ) )};" )
+                .Append( $"background-color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )};" )
+                .Append( $"border-color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )};" )
                 .AppendLine( "}" );
         }
 
@@ -289,6 +399,8 @@ namespace Blazorise.Bulma
             sb.Append( $".progress" ).Append( "{" )
                 .Append( $"border-radius: {GetBorderRadius( theme, options?.BorderRadius, Var( ThemeVariables.BorderRadius ) )};" )
                 .AppendLine( "}" );
+
+            base.GenerateProgressStyles( sb, theme, options );
         }
 
         protected override void GenerateAlertStyles( StringBuilder sb, Theme theme, ThemeAlertOptions options )

@@ -222,6 +222,93 @@ namespace Blazorise.Frolic
                 .AppendLine( "}" );
         }
 
+        protected override void GenerateSwitchVariantStyles( StringBuilder sb, Theme theme, string variant, string inBackgroundColor, ThemeSwitchOptions options )
+        {
+            var backgroundColor = ParseColor( inBackgroundColor );
+
+            if ( backgroundColor.IsEmpty )
+                return;
+
+            //var boxShadowColor = Lighten( backgroundColor, options?.BoxShadowLightenColor ?? 25 );
+            var disabledBackgroundColor = Lighten( backgroundColor, options?.DisabledLightenColor ?? 50 );
+
+            var background = ToHex( backgroundColor );
+            //var boxShadow = ToHex( boxShadowColor );
+            var disabledBackground = ToHex( disabledBackgroundColor );
+
+            sb
+                .Append( $".e-switch[type=\"checkbox\"].{variant}:checked + label::before," )
+                .Append( $".e-switch[type=\"checkbox\"].{variant}:checked + label:before" ).Append( "{" )
+                .Append( $"background-color: {background};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".e-switch[type=\"checkbox\"]:disabled.{variant}:checked + label::before" ).Append( "{" )
+                .Append( $"background-color: {disabledBackground};" )
+                .AppendLine( "}" );
+        }
+
+        protected override void GenerateStepsStyles( StringBuilder sb, Theme theme, ThemeStepsOptions stepsOptions )
+        {
+            sb
+                .Append( $".e-steps .e-step-item.e-step-item-completed::before" ).Append( "{" )
+                .Append( $"background-position: left bottom;" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".e-steps .e-step-item.e-step-item-completed .e-step-item-marker" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.White )};" )
+                .Append( $"background-color: {Var( ThemeVariables.StepsItemIconCompleted, Var( ThemeVariables.Color( "success" ) ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".e-steps .e-step-item.e-step-item-active.e-step-item-completed .e-step-item-marker," )
+                .Append( $".e-steps .e-step-item.e-step-item-active .e-step-item-marker" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.White )};" )
+                .Append( $"background-color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )};" )
+                .AppendLine( "}" );
+        }
+
+        protected override void GenerateStepsVariantStyles( StringBuilder sb, Theme theme, string variant, string inBackgroundColor, ThemeStepsOptions stepsOptions )
+        {
+            sb
+                .Append( $".e-steps .e-step-item.e-step-item-{variant}::before" ).Append( "{" )
+                .Append( $"background: linear-gradient(to left, #dbdbdb 50%, {Var( ThemeVariables.VariantStepsItemIcon( variant ) )} 50%);" )
+                .Append( $"background-size: 200% 100%;" )
+                .Append( $"background-position: right bottom;" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".e-steps .e-step-item.e-step-item-{variant} .e-step-item-marker" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.VariantStepsItemIconYiq( variant ) )};" )
+                .Append( $"background-color: {Var( ThemeVariables.VariantStepsItemIcon( variant ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".e-steps .e-step-item.e-step-item-{variant}.e-step-item-completed::before" ).Append( "{" )
+                .Append( $"background-position: left bottom;" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".e-steps .e-step-item.e-step-item-{variant}.e-step-item-completed .e-step-item-marker" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.VariantStepsItemIconYiq( variant ) )};" )
+                .Append( $"background-color: {Var( ThemeVariables.VariantStepsItemIcon( variant ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".e-steps .e-step-item.e-step-item-{variant}.e-step-item-active::before" ).Append( "{" )
+                .Append( $"background-position: left bottom;" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".e-steps .e-step-item.e-step-item-{variant}.e-step-item-active.e-step-item-completed .e-step-item-marker," )
+                .Append( $".e-steps .e-step-item.e-step-item-{variant}.e-step-item-active .e-step-item-marker" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.StepsItemIconActiveYiq, Var( ThemeVariables.White ) )} !important;" )
+                .Append( $"background-color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )} !important;" )
+                .Append( $"border-color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )} !important;" )
+                .AppendLine( "}" );
+        }
+
         protected override void GenerateAlertVariantStyles( StringBuilder sb, Theme theme, string variant, string inBackgroundColor, string inBorderColor, string inColor, ThemeAlertOptions options )
         {
             var backgroundColor = ParseColor( inBackgroundColor );
@@ -286,6 +373,8 @@ namespace Blazorise.Frolic
             sb.Append( $".e-progress" ).Append( "{" )
                 .Append( $"border-radius: {GetBorderRadius( theme, options?.BorderRadius, Var( ThemeVariables.BorderRadius ) )};" )
                 .AppendLine( "}" );
+
+            base.GenerateProgressStyles( sb, theme, options );
         }
 
         protected override void GenerateAlertStyles( StringBuilder sb, Theme theme, ThemeAlertOptions options )

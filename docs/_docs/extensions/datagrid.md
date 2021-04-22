@@ -43,6 +43,16 @@ In your main _Imports.razor_ add:
 @using Blazorise.DataGrid
 ```
 
+### Static Files
+
+Include CSS link into your index.html or _Host.cshtml file, depending if you’re using a Blazor WebAssembly or Blazor Server side project.
+
+```html
+<link href="_content/Blazorise.DataGrid/blazorise.datagrid.css" rel="stylesheet" />
+
+<script src="_content/Blazorise.DataGrid/blazorise.datagrid.js"></script>
+```
+
 ## Features
 
 ### Sorting
@@ -61,6 +71,15 @@ Default method for filtering is `Contains`. If you want to change it you can set
 - `Equals` search must match the entire value
 - `NotEquals` opposite of Equals
 
+**Example:**
+
+```html
+<DataGrid TItem="Employee"
+    Data="@employeeList"
+    Filterable="true"
+    FilterMethod="DataGridFilterMethod.StartsWith">
+```
+
 ### Custom Filtering
 
 Regular filter works on per field basis. To enable advanced search capabilities you can use an attribute `CustomFilter`. More can be found in Usage section.
@@ -72,6 +91,11 @@ Paging is handled automatically by the DataGrid. You also have some additional a
 - `ShowPager` to hide or show pagination controls
 - `PageSize` the maximum number of items for each page.
 - `CurrentPage` current page number.
+- `PreviousPageButtonTemplate` template for previous page button
+- `NextPageButtonTemplate` template for next page button
+- `FirstPageButtonTemplate` template for first page button
+- `LastPageButtonTemplate` template for last page button
+- `PageButtonTemplate` template for explicated page button with `PageButtonContext` as parameter
 
 ### Editing
 
@@ -118,6 +142,49 @@ The DataGrid provider several built-in aggregates for column values. Supported a
 - `Count`  Counts the elements in a collection.
 - `TrueCount` Counts boolean elements with true value.
 - `FalseCount` Counts boolean elements with false value.
+
+### Validations
+
+The DataGrid provides validations of column values at editing or creating items. For using validation of DataGrid you have to use these properties:
+
+- `ShowValidationFeedback` of DataGrid to hide or show feedback for validation.
+- `ShowValidationsSummary` of DataGrid to hide or show validations summary.
+- `ValidationsSummaryLabel` of DataGrid to set label of validations summary.
+- `Validator` of DataGridColumn validates the input value after trying to save.
+- `ValidationPattern` of DataGridColumn forces validation to use regex pattern matching instead of default validator handler.
+
+To enable basic validation you only need to define a `Validator` attribute and assign it to your validation method.
+
+```html
+<DataGridColumn TItem="Employee" Field="@nameof( Employee.EMail )" Caption="EMail" Validator="@CheckEMail" Editable="true" />
+
+public void CheckEMail( ValidatorEventArgs validationArgs )
+{
+    ValidationRule.IsEmail( validationArgs );
+
+    if ( validationArgs.Status == ValidationStatus.Error )
+    {
+        validationArgs.ErrorText = "EMail has to be valid email";
+    }
+}
+```
+
+If you use `EditTemplate` to customize editing of columns, then using `Validator` or `ValidationPattern` will not work and you have to use `Validation` like this:
+
+```html
+<DataGridColumn TItem="Employee" Field="@nameof(Employee.Salary)" Caption="Salary" Editable="true">
+    ...
+    <EditTemplate>
+        <Validation Validator="@CheckSalary" >
+            <NumericEdit ... >
+                <Feedback>
+                    <ValidationError/>
+                </Feedback>
+            </NumericEdit >
+        </Validation>
+    </EditTemplate>
+</DataGridColumn>
+```
 
 ## Usage
 
@@ -333,6 +400,22 @@ You have full control over appearance of each row, including the selected rows.
 }
 ```
 
+### NewItemDefaultSetter
+
+`NewItemDefaultSetter` function is used to set default values when new item is created and before the edit form is shown. It will only be evaluate, if datagrid is editable.
+
+```html
+<DataGrid TItem="Employee" Editable="true" NewItemDefaultSetter="@OnEmployeeNewItemDefaultSetter">
+  ...
+</DataGrid>
+@code{
+    void OnEmployeeNewItemDefaultSetter( Employee employee )
+    {
+        employee.Salary = 100.0M;
+        employee.IsActive = true;
+    }
+}
+```
 
 ## Templates
 
@@ -342,7 +425,7 @@ Both templates have a special `context` attribute that is used to give access to
 
 ### DisplayTemplate
 
-Display template is using `TItem` as a context value. 
+Display template is using `TItem` as a context value.
 
 ```html
 <DataGridNumericColumn TItem="Employee" Field="@nameof(Employee.DateOfBirth)" Caption="Date Of Birth" Editable="true">
@@ -374,9 +457,9 @@ Edit template will give you a way to handle the editing of grid cell values. For
 </DataGridColumn>
 ```
 
-### RowDetailTemplate
+### DetailRowTemplate
 
-RowDetail template allows you to display nested structure bellow each row in the grid. One of the examples is "master-detail" relationship between two data-source inside the DataGrid.
+DetailRow template allows you to display nested structure bellow each row in the grid. One of the examples is "master-detail" relationship between two data-source inside the DataGrid.
 
 For this template the `context` value is the item from the parent grid.
 
@@ -397,7 +480,7 @@ For this template the `context` value is the item from the parent grid.
 </DetailRowTemplate>
 ```
 
-Once it's defined a DetailRow will be visible for every row in the grid. If you want to control the visibility of detail-row you can use `RowDetailTrigger` attribute that can be defined in it's parent grid.
+Once it's defined a DetailRow will be visible for every row in the grid. If you want to control the visibility of detail-row you can use `DetailRowTrigger` attribute that can be defined in it's parent grid.
 
 ```html
 <DataGrid TItem="Employee"
@@ -477,42 +560,119 @@ If you want to change display of content, while grid is empty or `ReadData` is e
 }
 ```
 
+
+### Empty Cell Template
+
+If you want to change cell content display when cell's value is null, use `EmptyCellTemplate`.
+
+```html
+<DataGrid TItem="Employee"
+    Data="@employeeList"
+    TotalItems="@totalEmployees"
+    ReadData="@LoadEmployeesFromService">
+    <ChildContent>
+    	<!--DataGridColumns-->
+    </ChildContent>
+    <EmptyCellTemplate>
+    	<Text Style="opacity: .5;">-</Text>
+    </EmptyTemplate>
+</DataGrid>
+```
+
+### DataGrid Multiple Selection
+
+Set `SelectionMode` to `DataGridSelectionMode.Multiple` to enable multiple selection on Datagrid. 
+
+```html
+<DataGrid TItem="Employee"
+    Data="@employeeList"
+    SelectionMode="DataGridSelectionMode.Multiple"
+    @bind-SelectedRows="@selectedEmployees">
+</DataGrid>
+```
+
+Clicking rows will now select multiple records at a time. You can now access them by using the `SelectedRows` parameter and also bind to the `SelectedRowsChanged` event callback.
+
+Optionally you can use the new Datagrid column `<DataGridMultiSelectColumn>` to enable a checkbox column that works exclusively with multiple selection. You can either use your own `MultiSelectTemplate` render fragment to customize the input that will appear in the column and trigger the multiple selection by then binding to the provided `SelectedChanged` event callback or just use the provided default by not specifying a `MultiSelectTemplate` render fragment. When using this extra column, the top row column, will provide the ability to select or unselect all rows.
+
+```html
+<DataGrid TItem="Employee"
+    Data="@employeeList"
+    SelectionMode="DataGridSelectionMode.Multiple">
+    <DataGridColumns>
+        <DataGridMultiSelectColumn TItem="Employee" Width="30px"></DataGridMultiSelectColumn>
+        ...
+    </DataGridColumns>
+</DataGrid>
+```
+
+### DataGrid Button Row
+
+Provide a `ButtonRowTemplate` and have the DataGridCommandMode set to either `Default` or `ButtonRow`. 
+
+The template has access to the internal commands so you're also able to construct your own buttons on the pager that can also trigger the Datagrid's CRUD and clear filter operations as shown in the example below:
+```html
+<ButtonRowTemplate>
+    <Button Color="Color.Success" Clicked="@context.NewCommand.Clicked">New</Button>
+    <Button Color="Color.Primary" Disabled="@(selectedEmployee is null)" Clicked="context.EditCommand.Clicked">Edit</Button>
+    <Button Color="Color.Danger" Disabled="@(selectedEmployee is null)" Clicked="context.DeleteCommand.Clicked">Delete</Button>
+    <Button Color="Color.Link" Clicked="@context.ClearFilterCommand.Clicked">Clear Filter</Button>
+</ButtonRowTemplate>
+```
+
+### DataGrid Resizable
+
+Set `Resizable` to `true` and you'll be able to resize the datagrid columns. 
+
 ## Attributes
 
 ### DataGrid
 
-| Name                   | Type                                                                | Default | Description                                                                                                 |
-|------------------------|---------------------------------------------------------------------|---------|-------------------------------------------------------------------------------------------------------------|
-| Data                   | IEnumerable<TItem>                                                  |         | Grid data-source.                                                                                           |
-| EditMode               | [EditMode]({{ "/docs/extensions/datagrid/#editmode" | relative_url }})| `Form` | Specifies the grid editing modes.                                                                          |
-| UseInternalEditing     | boolean                                                             | `true`  | Specifies the behavior of DataGrid editing.                                                                 |
-| Editable               | boolean                                                             | `false` | Whether users can edit DataGrid rows.                                                                       |
-| Sortable               | boolean                                                             | `true`  | Whether end-users can sort data by the column's values.                                                     |
-| ShowCaptions           | boolean                                                             | `true`  | Gets or sets whether user can see a column captions.                                                        |
-| Filterable             | boolean                                                             | `false` | Whether users can filter rows by its cell values.                                                           |
-| ShowPager              | boolean                                                             | `false` | Whether users can navigate DataGrid by using pagination controls.                                           |
-| CurrentPage            | boolean                                                             | `1`     | Current page number.                                                                                        |
-| PageSize               | int                                                                 | `5`     | Maximum number of items for each page.                                                                      |
-| Striped                | boolean                                                             | `false` | Adds stripes to the table.                                                                                  |
-| Bordered               | boolean                                                             | `false` | Adds borders to all the cells.                                                                              |
-| Borderless             | boolean                                                             | `false` | Makes the table without any borders.                                                                        |
-| Hoverable              | boolean                                                             | `false` | Adds a hover effect when moussing over rows.                                                                |
-| Narrow                 | boolean                                                             | `false` | Makes the table more compact by cutting cell padding in half.                                               |
-| ReadData               | EventCallback                                                       |         | Handles the manual loading of large data sets.                                                              |
-| SelectedRow            | TItem                                                               |         | Currently selected row.                                                                                     |
-| SelectedRowChanged     | EventCallback                                                       |         | Occurs after the selected row has changed.                                                                  |
-| RowSelectable          | `Func<TItem,bool>`                                                  |         | Handles the selection of the clicked row. If not set it will default to always true.                        |
-| RowHoverCursor         |` Func<TItem,Blazorise.Cursor>`                                      |         | Handles the selection of the cursor for a hovered row. If not set, `Blazorise.Cursor.Pointer` will be used. |
-| DetailRowTrigger       | `Func<TItem,bool>`                                                  |         | A trigger function used to handle the visibility of detail row.                                             |
-| RowInserting           | Action                                                              |         | Cancelable event called before the row is inserted.                                              |
-| RowUpdating            | Action                                                              |         | Cancelable event called before the row is updated.                                              |
-| RowInserted            | EventCallback                                                       |         | Event called after the row is inserted.                                                                     |
-| RowUpdated             | EventCallback                                                       |         | Event called after the row is updated.                                                                      |
-| RowRemoving            | Action                                                              |         | Cancelable event called before the row is removed.                                                          |
-| RowRemoved             | EventCallback                                                       |         | Event called after the row is removed.                                                                      |
-| PageChanged            | EventCallback                                                       |         | Occurs after the selected page has changed.                                                                 |
-| EmptyTemplate            | RenderingFragment                                                       |         | Define the format for empty data collection                                                                 |
-| LoadingTemplate            | RenderingFragment                                                       |         | Define the format for signal of loading data                                                                 |
+| Name                   | Type                                                                                         | Default                | Description                                                                                                          |
+|------------------------|----------------------------------------------------------------------------------------------|------------------------|----------------------------------------------------------------------------------------------------------------------|
+| Data                   | IEnumerable<TItem>                                                                           |                        | Grid data-source.                                                                                                    |
+| EditMode               | [EditMode]({{ "/docs/extensions/datagrid/#editmode" | relative_url }})                       | `Form`                 | Specifies the grid editing modes.                                                                                    |
+| UseInternalEditing     | boolean                                                                                      | `true`                 | Specifies the behavior of DataGrid editing.                                                                          |
+| Editable               | boolean                                                                                      | `false`                | Whether users can edit DataGrid rows.                                                                                |
+| Resizable              | boolean                                                                                      | `false`                | Whether users can resize DataGrid columns.                                                                           |
+| ResizeMode             | [DataGridResizeMode]({{ "/docs/helpers/enums/#datagridresizemode" | relative_url }})         | `Header`               | Defines the resize mode of the data grid columns.                                                                    |
+| Sortable               | boolean                                                                                      | `true`                 | Whether end-users can sort data by the column's values.                                                              |
+| ShowCaptions           | boolean                                                                                      | `true`                 | Gets or sets whether user can see a column captions.                                                                 |
+| Filterable             | boolean                                                                                      | `false`                | Whether users can filter rows by its cell values.                                                                    |
+| ShowPager              | boolean                                                                                      | `false`                | Whether users can navigate DataGrid by using pagination controls.                                                    |
+| CurrentPage            | boolean                                                                                      | `1`                    | Current page number.                                                                                                 |
+| PageSize               | int                                                                                          | `5`                    | Maximum number of items for each page.                                                                               |
+| Striped                | boolean                                                                                      | `false`                | Adds stripes to the table.                                                                                           |
+| Bordered               | boolean                                                                                      | `false`                | Adds borders to all the cells.                                                                                       |
+| Borderless             | boolean                                                                                      | `false`                | Makes the table without any borders.                                                                                 |
+| Hoverable              | boolean                                                                                      | `false`                | Adds a hover effect when moussing over rows.                                                                         |
+| Narrow                 | boolean                                                                                      | `false`                | Makes the table more compact by cutting cell padding in half.                                                        |
+| ReadData               | EventCallback                                                                                |                        | Handles the manual loading of large data sets.                                                                       |
+| SelectedRow            | TItem                                                                                        |                        | Currently selected row.                                                                                              |
+| SelectedRowChanged     | EventCallback                                                                                |                        | Occurs after the selected row has changed.                                                                           |
+| RowSelectable          | `Func<TItem,bool>`                                                                           |                        | Handles the selection of the clicked row. If not set it will default to always true.                                 |
+| RowHoverCursor         |` Func<TItem,Blazorise.Cursor>`                                                               |                        | Handles the selection of the cursor for a hovered row. If not set, `Blazorise.Cursor.Pointer` will be used.          |
+| DetailRowTrigger       | `Func<TItem,bool>`                                                                           |                        | A trigger function used to handle the visibility of detail row.                                                      |
+| RowInserting           | Action                                                                                       |                        | Cancelable event called before the row is inserted.                                                                  |
+| RowUpdating            | Action                                                                                       |                        | Cancelable event called before the row is updated.                                                                   |
+| RowInserted            | EventCallback                                                                                |                        | Event called after the row is inserted.                                                                              |
+| RowUpdated             | EventCallback                                                                                |                        | Event called after the row is updated.                                                                               |
+| RowRemoving            | Action                                                                                       |                        | Cancelable event called before the row is removed.                                                                   |
+| RowRemoved             | EventCallback                                                                                |                        | Event called after the row is removed.                                                                               |
+| PageChanged            | EventCallback                                                                                |                        | Occurs after the selected page has changed.                                                                          |
+| EmptyCellTemplate      | RenderingFragment                                                                            |                        | Define the format for empty data cell                                                                                |
+| EmptyTemplate          | RenderingFragment                                                                            |                        | Define the format for empty data collection                                                                          |
+| LoadingTemplate        | RenderingFragment                                                                            |                        | Define the format for signal of loading data                                                                         |
+| PopupTitleTemplate     | `RenderFragment<PopupTitleContext<TItem>>`                                                   |                        | Template for custom title of edit popup dialog                                                                       |
+| NewItemDefaultSetter   | `Action<TItem>`                                                                              |                        | Action will be called for setting default values of property, when create new entry                                  |
+| PageButtonTemplate     | `RenderTemplate<PageButtonContext>`                                                          |                        | Define the format a pagination button                                                                                |
+| ShowValidationFeedback | boolean                                                                                      | false                  | Hide or show feedback for validation                                                                                 |
+| ShowValidationsSummary | boolean                                                                                      | true                   | Hide or show validations summary                                                                                     |
+| ValidationsSummaryLabel| string                                                                                       | null                   | Set label of validations summary                                                                                     |
+| SortMode               | [DataGridSortMode]({{ "/docs/helpers/enums/#datagridsortmode" | relative_url }})             | `Multiple`             | Defines whether the user can sort only by one column or by multiple.                                                 |
+| SelectionMode          | [DataGridSelectionMode]({{ "/docs/helpers/enums/#datagridselectionmode" | relative_url }})   | `Single`               | Defines whether the datagrid is set to single or multiple selection mode.                                            |
+| Localizers             | `DataGridLocalizers`                                                                         |                        | Custom localizer handlers to override default  localization.                                                         |
+| CommandMode            | [DataGridCommandMode]({{ "/docs/helpers/enums/#datagridcommandmode" | relative_url }})       | `Default`              | Defines whether the datagrid renders both commands and button row or just either one of them.                        |
 
 ### EditMode
 
@@ -524,30 +684,38 @@ Specifies the grid editing modes.
 
 ### DataGridColumn
 
-| Name                      | Type                                                                | Default | Description                                                                                                   |
-|---------------------------|---------------------------------------------------------------------|---------|---------------------------------------------------------------------------------------------------------------|
-| Field                     | string                                                              |         | TItem data field name.                                                                                        |
-| Caption                   | string                                                              |         | Column's display caption.                                                                                     |
-| Filter                    | FilterContext                                                       |         | Filter value for this column.                                                                                 |
-| Direction                 | SortDirection                                                       | `None`  | Column initial sort direction.                                                                                |
-| TextAlignment             | TextAlignment                                                       | `None`  | Defines the alignment for display cell.                                                                       |
-| Editable                  | bool                                                                | false   | Whether users can edit cell values under this column.                                                         |
-| Displayable               | bool                                                                | true    | Whether column can be displayed on a grid.                                                                    |
-| Sortable                  | bool                                                                | true    | Whether end-users can sort data by the column's values.                                                       |
-| Readonly                  | bool                                                                | false   | whether end-users are prevented from editing the column's cell values.                                        |
-| ShowCaption               | bool                                                                | true    | whether the column's caption is displayed within the column header.                                           |
-| Filterable                | bool                                                                | true    | Whether users can filter rows by its cell values.                                                             |
-| Width                     | string                                                              | null    | The width of the column.                                                                                      |
-| DisplayFormat             | string                                                              |         | Defines the format for display value.                                                                         |
-| DisplayFormatProvider     | IFormatProvider                                                     |         | Defines the format provider info for display value.                                                           |
-| CellClass                 | `Func<TItem, string>`                                               |         | Custom classname handler for cell based on the current row item.                                              |
-| CellStyle                 | `Func<TItem, string>`                                               |         | Custom style handler for cell based on the current row item.                                                  |
-| HeaderCellClass           | string                                                              |         | Custom classname for header cell.                                                                             |
-| HeaderCellStyle           | string                                                              |         | Custom style for header cell.                                                                                 |
-| FilterCellClass           | string                                                              |         | Custom classname for filter cell.                                                                             |
-| FilterCellStyle           | string                                                              |         | Custom style for filter cell.                                                                                 |
-| GroupCellClass            | string                                                              |         | Custom classname for group cell.                                                                              |
-| GroupCellStyle            | string                                                              |         | Custom style for group cell.                                                                                  |
-| DisplayTemplate           | `RenderFragment<TItem>`                                             |         | Template for custom cell display formating.                                                                   |
-| EditTemplate              | `RenderFragment<CellEditContext>`                                   |         | Template for custom cell editing.                                                                             |
-| FilterTemplate            | `RenderFragment<FilterContext>`                                     |         | Template for custom column filter rendering.                                                                  |
+| Name                      | Type                                                                | Default             | Description                                                                                                   |
+|---------------------------|---------------------------------------------------------------------|---------------------|---------------------------------------------------------------------------------------------------------------|
+| Field                     | string                                                              |                     | TItem data field name.                                                                                        |
+| Caption                   | string                                                              |                     | Column's display caption. It will be displayed, if ColumnTemplate is not set.                                 |
+| Filter                    | FilterContext                                                       |                     | Filter value for this column.                                                                                 |
+| Direction                 | SortDirection                                                       | `None`              | Column initial sort direction.                                                                                |
+| TextAlignment             | TextAlignment                                                       | `None`              | Defines the alignment for display cell.                                                                       |
+| HeaderTextAlignment       | TextAlignment                                                       | `None`              | Defines the alignment for column header cell.                                                                 |
+| Editable                  | bool                                                                | false               | Whether users can edit cell values under this column.                                                         |
+| Displayable               | bool                                                                | true                | Whether column can be displayed on a grid.                                                                    |
+| DisplayOrder              | int                                                                 | 0                   | Where column will be displayed on a grid.                                                                     |
+| Sortable                  | bool                                                                | true                | Whether end-users can sort data by the column's values.                                                       |
+| Readonly                  | bool                                                                | false               | whether end-users are prevented from editing the column's cell values.                                        |
+| ShowCaption               | bool                                                                | true                | whether the column's caption is displayed within the column header.                                           |
+| Filterable                | bool                                                                | true                | Whether users can filter rows by its cell values.                                                             |
+| Width                     | string                                                              | null                | The width of the column.                                                                                      |
+| DisplayFormat             | string                                                              |                     | Defines the format for display value.                                                                         |
+| DisplayFormatProvider     | IFormatProvider                                                     |                     | Defines the format provider info for display value.                                                           |
+| CellClass                 | `Func<TItem, string>`                                               |                     | Custom classname handler for cell based on the current row item.                                              |
+| CellStyle                 | `Func<TItem, string>`                                               |                     | Custom style handler for cell based on the current row item.                                                  |
+| HeaderCellClass           | string                                                              |                     | Custom classname for header cell.                                                                             |
+| HeaderCellStyle           | string                                                              |                     | Custom style for header cell.                                                                                 |
+| FilterCellClass           | string                                                              |                     | Custom classname for filter cell.                                                                             |
+| FilterCellStyle           | string                                                              |                     | Custom style for filter cell.                                                                                 |
+| GroupCellClass            | string                                                              |                     | Custom classname for group cell.                                                                              |
+| GroupCellStyle            | string                                                              |                     | Custom style for group cell.                                                                                  |
+| DisplayTemplate           | `RenderFragment<TItem>`                                             |                     | Template for custom cell display formating.                                                                   |
+| EditTemplate              | `RenderFragment<CellEditContext>`                                   |                     | Template for custom cell editing.                                                                             |
+| FilterTemplate            | `RenderFragment<FilterContext>`                                     |                     | Template for custom column filter rendering.                                                                  |
+| PopupSize                 | [ModalSize]({{ "/docs/helpers/sizes/#modalsize" | relative_url }})  |  `Default`          | Defines the size of popup modal.                                                                              |
+| PopupFieldColumnSize      | `IFluentColumn`                                                     |  `IsHalf.OnDesktop` | Defines the size of field for popup modal.                                                                    |
+| CaptionTemplate           | `RenderingFragment<DataGridColumn<TItem>>`                          |                     | Template for custom caption. CaptionTemplate will block caption template.                                     |
+| SortDirectionTemplate     | `RenderingFragment<SortDirection>`                                  |                     | Template for custom sort direction icon.                                                                      |
+| Validator                 | `Action<ValidatorEventArgs>`                                        |                     | Validates the input value after trying to save.                                                               |
+| ValidationPattern         | string                                                              |                     | Forces validation to use regex pattern matching instead of default validator handler.                         |

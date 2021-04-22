@@ -381,6 +381,101 @@ namespace Blazorise.AntDesign
                 .AppendLine( "}" );
         }
 
+        protected override void GenerateSwitchVariantStyles( StringBuilder sb, Theme theme, string variant, string inBackgroundColor, ThemeSwitchOptions options )
+        {
+            var backgroundColor = ParseColor( inBackgroundColor );
+
+            if ( backgroundColor.IsEmpty )
+                return;
+
+            var boxShadowColor = Lighten( backgroundColor, options?.BoxShadowLightenColor ?? 25 );
+            var disabledBackgroundColor = Lighten( backgroundColor, options?.DisabledLightenColor ?? 50 );
+
+            var background = ToHex( backgroundColor );
+            var boxShadow = ToHex( boxShadowColor );
+            var disabledBackground = ToHex( disabledBackgroundColor );
+
+            sb
+                .Append( $".ant-switch.ant-switch-{variant}.ant-switch-checked" ).Append( "{" )
+                .Append( $"background-color: {background};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".ant-switch.ant-switch-{variant}:focus" ).Append( "{" )
+                .Append( $"box-shadow: {boxShadow};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".ant-switch:disabled.ant-switch-{variant}.ant-switch-checked" ).Append( "{" )
+                .Append( $"background-color: {disabledBackground};" )
+                .AppendLine( "}" );
+        }
+
+        protected override void GenerateStepsStyles( StringBuilder sb, Theme theme, ThemeStepsOptions stepsOptions )
+        {
+            sb
+                .Append( $".ant-steps-item.ant-steps-item-active.ant-steps-item-process.ant-steps-item-finish .ant-steps-item-icon" ).Append( "{" )
+                .Append( $"background-color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".ant-steps-item.ant-steps-item-active.ant-steps-item-process.ant-steps-item-finish .ant-steps-item-icon .ant-steps-icon" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.StepsItemIconActiveYiq, Var( ThemeVariables.White ) )};" )
+                .AppendLine( "}" );
+        }
+
+        protected override void GenerateStepsVariantStyles( StringBuilder sb, Theme theme, string variant, string inBackgroundColor, ThemeStepsOptions stepsOptions )
+        {
+            sb
+                .Append( $".ant-steps-item-{variant}.ant-steps-item-finish .ant-steps-item-content .ant-steps-item-title" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.VariantStepsItemText( variant ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".ant-steps-item-{variant}.ant-steps-item-wait .ant-steps-item-icon" ).Append( "{" )
+                .Append( $"border-color: {Var( ThemeVariables.VariantStepsItemIcon( variant ) )};" )
+                .Append( $"color: {Var( ThemeVariables.VariantStepsItemIconYiq( variant ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".ant-steps-item-{variant}.ant-steps-item-wait .ant-steps-item-content .ant-steps-item-title" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.VariantStepsItemText( variant ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".ant-steps-item-{variant}.ant-steps-item-active.ant-steps-item-finish .ant-steps-item-icon" ).Append( "{" )
+                .Append( $"background-color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )};" )
+                .Append( $"border-color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )};" )
+                .Append( $"color: {Var( ThemeVariables.StepsItemIconActiveYiq, Var( ThemeVariables.White ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".ant-steps-item-{variant}.ant-steps-item-active.ant-steps-item-process .ant-steps-icon" ).Append( "{" )
+                .Append( $"border-color: {Var( ThemeVariables.StepsItemIconActive, Var( ThemeVariables.Color( "primary" ) ) )};" )
+                .Append( $"color: {Var( ThemeVariables.StepsItemIconActiveYiq, Var( ThemeVariables.White ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".ant-steps-item-{variant}.ant-steps-item-active.ant-steps-item-process .ant-steps-item-content .ant-steps-item-title" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.VariantStepsItemIcon( variant ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".ant-steps-item-{variant} .ant-steps-item-icon" ).Append( "{" )
+                .Append( $"border-color: {Var( ThemeVariables.VariantStepsItemIcon( variant ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".ant-steps-item-{variant} .ant-steps-item-icon .ant-steps-icon" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.VariantStepsItemIcon( variant ) )};" )
+                .AppendLine( "}" );
+
+            sb
+                .Append( $".ant-steps-item-{variant} .ant-steps-item-content .ant-steps-item-title" ).Append( "{" )
+                .Append( $"color: {Var( ThemeVariables.VariantStepsItemText( variant ) )};" )
+                .AppendLine( "}" );
+        }
+
         protected override void GenerateAlertVariantStyles( StringBuilder sb, Theme theme, string variant, string inBackgroundColor, string inBorderColor, string inColor, ThemeAlertOptions options )
         {
             var backgroundColor = ParseColor( inBackgroundColor );
@@ -524,6 +619,8 @@ namespace Blazorise.AntDesign
                     .Append( $"background-color: {Var( ThemeVariables.Color( "primary" ) )};" )
                     .AppendLine( "}" );
             }
+
+            base.GenerateProgressStyles( sb, theme, options );
         }
 
         protected override void GenerateAlertStyles( StringBuilder sb, Theme theme, ThemeAlertOptions options )

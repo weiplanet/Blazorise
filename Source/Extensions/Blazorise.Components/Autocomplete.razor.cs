@@ -2,17 +2,33 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Blazorise.Extensions;
+using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 #endregion
 
 namespace Blazorise.Components
 {
-    public partial class Autocomplete<TItem> : ComponentBase
+    /// <summary>
+    /// The autocomplete is a normal text input enhanced by a panel of suggested options.
+    /// </summary>
+    /// <typeparam name="TItem">Type of an item filtered by the autocomplete component.</typeparam>
+    /// <typeparam name="TValue">Type of an SelectedValue field.</typeparam>
+    public partial class Autocomplete<TItem, TValue> : ComponentBase
     {
         #region Members
+
+        /// <summary>
+        /// Reference to the Dropdown component.
+        /// </summary>
+        private Dropdown dropdownRef;
+
+        /// <summary>
+        /// Reference to the TextEdit component.
+        /// </summary>
+        private TextEdit textEditRef;
 
         /// <summary>
         /// Original data-source.
@@ -29,13 +45,21 @@ namespace Blazorise.Components
         /// </summary>
         private bool dirtyFilter = true;
 
-        private object selectedValue;
+        /// <summary>
+        /// Holds internal selected value.
+        /// </summary>
+        private TValue selectedValue;
 
         #endregion
 
         #region Methods
 
-        protected async Task HandleTextChanged( string text )
+        /// <summary>
+        /// Handles the search field onchange or oninput event.
+        /// </summary>
+        /// <param name="text">Serach value.</param>
+        /// <returns>Returns awaitable task</returns>
+        protected async Task OnTextChangedHandler( string text )
         {
             CurrentSearch = text ?? string.Empty;
             SelectedText = CurrentSearch;
@@ -53,7 +77,12 @@ namespace Blazorise.Components
             await SearchChanged.InvokeAsync( CurrentSearch );
         }
 
-        protected async Task HandleTextKeyDown( KeyboardEventArgs e )
+        /// <summary>
+        /// Handles the search field onfocusin event.
+        /// </summary>
+        /// <param name="eventArgs">Event arguments.</param>
+        /// <returns>Returns awaitable task</returns>
+        protected async Task OnTextKeyDownHandler( KeyboardEventArgs e )
         {
             if ( !DropdownVisible )
                 return;
@@ -68,8 +97,8 @@ namespace Blazorise.Components
             {
                 var item = FilteredData.ElementAtOrDefault( activeItemIndex );
 
-                if ( item != null )
-                    await HandleDropdownItemClicked( ValueField.Invoke( item ) );
+                if ( item != null && ValueField != null )
+                    await OnDropdownItemClicked( ValueField.Invoke( item ) );
             }
             else if ( e.Code == "Escape" )
             {
@@ -85,18 +114,46 @@ namespace Blazorise.Components
             }
         }
 
-        protected async Task HandleDropdownItemClicked( object value )
+        /// <summary>
+        /// Handles the search field onfocusin event.
+        /// </summary>
+        /// <param name="eventArgs">Event arguments.</param>
+        /// <returns>Returns awaitable task</returns>
+        protected Task OnTextFocusInHandler( FocusEventArgs eventArgs )
+        {
+            TextFocused = true;
+
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Handles the search field onblur event.
+        /// </summary>
+        /// <param name="eventArgs">Event arguments.</param>
+        /// <returns>Returns awaitable task</returns>
+        protected async Task OnTextBlurHandler( FocusEventArgs eventArgs )
+        {
+            // Give enought time for other events to do their stuff before closing
+            // the dropdown.
+            await Task.Delay( 100 );
+
+            TextFocused = false;
+        }
+
+        private async Task OnDropdownItemClicked( object value )
         {
             CurrentSearch = null;
             dropdownRef.Hide();
 
-            var item = Data.FirstOrDefault( x => EqualityComparer<object>.Default.Equals( ValueField( x ), value ) );
+            var item = Data.FirstOrDefault( x => ValueField( x ).IsEqual( value ) );
 
             SelectedText = item != null ? TextField?.Invoke( item ) : string.Empty;
-            SelectedValue = value;
+            SelectedValue = Converters.ChangeType<TValue>( value );
 
             await SelectedValueChanged.InvokeAsync( SelectedValue );
             await SearchChanged.InvokeAsync( CurrentSearch );
+
+            textEditRef?.Revalidate();
         }
 
         private void FilterData()
@@ -119,14 +176,14 @@ namespace Blazorise.Components
             {
                 query = from q in query
                         let text = TextField.Invoke( q )
-                        where text.IndexOf( CurrentSearch, 0, System.StringComparison.CurrentCultureIgnoreCase ) >= 0
+                        where text.IndexOf( CurrentSearch ?? string.Empty, 0, StringComparison.CurrentCultureIgnoreCase ) >= 0
                         select q;
             }
             else
             {
                 query = from q in query
                         let text = TextField.Invoke( q )
-                        where text.StartsWith( CurrentSearch, StringComparison.OrdinalIgnoreCase )
+                        where text.StartsWith( CurrentSearch ?? string.Empty, StringComparison.OrdinalIgnoreCase )
                         select q;
             }
 
@@ -145,7 +202,7 @@ namespace Blazorise.Components
             dropdownRef.Hide();
 
             SelectedText = string.Empty;
-            SelectedValue = null;
+            SelectedValue = default;
 
             await SelectedValueChanged.InvokeAsync( selectedValue );
             await SearchChanged.InvokeAsync( CurrentSearch );
@@ -160,6 +217,14 @@ namespace Blazorise.Components
                 activeItemIndex = FilteredData.Count - 1;
 
             ActiveItemIndex = activeItemIndex;
+
+            // update search text with the currently focused item text
+            if ( FilteredData.Count > 0 && ActiveItemIndex >= 0 && ActiveItemIndex <= ( FilteredData.Count - 1 ) )
+            {
+                var item = FilteredData[ActiveItemIndex];
+
+                SelectedText = item != null ? TextField?.Invoke( item ) : string.Empty;
+            }
         }
 
         /// <summary>
@@ -168,25 +233,47 @@ namespace Blazorise.Components
         /// <param name="scrollToElement">If true the browser should scroll the document to bring the newly-focused element into view.</param>
         public void Focus( bool scrollToElement = true )
         {
-            textEdit.Focus( scrollToElement );
+            textEditRef.Focus( scrollToElement );
         }
 
         #endregion
 
         #region Properties
 
-        protected Dropdown dropdownRef;
+        /// <summary>
+        /// Gets or sets the dropdown element id.
+        /// </summary>
+        [Parameter] public string ElementId { get; set; }
 
-        protected TextEdit textEdit;
-
+        /// <summary>
+        /// Gets or sets the current search value.
+        /// </summary>
         protected string CurrentSearch { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Gets or sets the currently selected item text.
+        /// </summary>
         protected string SelectedText { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Gets or sets the currently active item index.
+        /// </summary>
         protected int ActiveItemIndex { get; set; }
 
-        protected bool DropdownVisible => Data != null && TextField != null && CurrentSearch?.Length >= MinLength;
+        /// <summary>
+        /// Gets or sets the serach field focus state.
+        /// </summary>
+        protected bool TextFocused { get; set; }
 
+        /// <summary>
+        /// True if the dropdown menu should be visible.
+        /// </summary>
+        protected bool DropdownVisible
+            => FilteredData?.Count > 0 && TextField != null && CurrentSearch?.Length >= MinLength && TextFocused;
+
+        /// <summary>
+        /// Gets the custom classnames for dropdown element.
+        /// </summary>
         protected string DropdownClassNames
             => $"{Class} b-is-autocomplete";
 
@@ -253,24 +340,24 @@ namespace Blazorise.Components
         /// <summary>
         /// Method used to get the value field from the supplied data source.
         /// </summary>
-        [Parameter] public Func<TItem, object> ValueField { get; set; }
+        [Parameter] public Func<TItem, TValue> ValueField { get; set; }
 
         /// <summary>
         /// Currently selected item value.
         /// </summary>
         [Parameter]
-        public object SelectedValue
+        public TValue SelectedValue
         {
             get { return selectedValue; }
             set
             {
-                if ( selectedValue == value )
+                if ( selectedValue.IsEqual( value ) )
                     return;
 
                 selectedValue = value;
 
                 var item = Data != null
-                    ? Data.FirstOrDefault( x => EqualityComparer<object>.Default.Equals( ValueField( x ), value ) )
+                    ? Data.FirstOrDefault( x => ValueField( x ).IsEqual( value ) )
                     : default;
 
                 SelectedText = item != null
@@ -282,20 +369,60 @@ namespace Blazorise.Components
         /// <summary>
         /// Occurs after the selected value has changed.
         /// </summary>
-        [Parameter] public EventCallback<object> SelectedValueChanged { get; set; }
+        [Parameter] public EventCallback<TValue> SelectedValueChanged { get; set; }
 
         /// <summary>
         /// Occurs on every search text change.
         /// </summary>
         [Parameter] public EventCallback<string> SearchChanged { get; set; }
 
+        /// <summary>
+        /// Custom classname for dropdown element.
+        /// </summary>
         [Parameter] public string Class { get; set; }
 
+        /// <summary>
+        /// Custom styles for dropdown element.
+        /// </summary>
         [Parameter] public string Style { get; set; }
 
+        /// <summary>
+        /// If true the text in will be changed after each key press.
+        /// </summary>
+        /// <remarks>
+        /// Note that setting this will override global settings in <see cref="BlazoriseOptions.ChangeTextOnKeyPress"/>.
+        /// </remarks>
+        [Parameter] public bool? ChangeTextOnKeyPress { get; set; }
+
+        /// <summary>
+        /// If true the entered text will be slightly delayed before submiting it to the internal value.
+        /// </summary>
+        [Parameter] public bool? DelayTextOnKeyPress { get; set; }
+
+        /// <summary>
+        /// Interval in milliseconds that entered text will be delayed from submiting to the internal value.
+        /// </summary>
+        [Parameter] public int? DelayTextOnKeyPressInterval { get; set; }
+
+        /// <summary>
+        /// If defined, indicates that its element can be focused and can participates in sequential keyboard navigation.
+        /// </summary>
+        [Parameter] public int? TabIndex { get; set; }
+
+        /// <summary>
+        /// Validation handler used to validate selected value.
+        /// </summary>
+        [Parameter] public Action<ValidatorEventArgs> Validator { get; set; }
+
+        /// <summary>
+        /// Captures all the custom attribute that are not part of Blazorise component.
+        /// </summary>
         [Parameter( CaptureUnmatchedValues = true )]
         public Dictionary<string, object> Attributes { get; set; }
 
+        /// <summary>
+        /// Specifies the content to be rendered inside this <see cref="Autocomplete{TItem, TValue}"/>.
+        /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
 
         #endregion
