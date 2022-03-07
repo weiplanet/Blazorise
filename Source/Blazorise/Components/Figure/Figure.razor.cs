@@ -5,20 +5,24 @@ using Microsoft.AspNetCore.Components;
 
 namespace Blazorise
 {
+    /// <summary>
+    /// Wrapper for piece of content like images, than can display optional caption.
+    /// </summary>
     public partial class Figure : BaseComponent
     {
         #region Members
 
-        private FigureSize size = FigureSize.None;
+        private FigureSize size = FigureSize.Default;
 
         #endregion
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.Figure() );
-            builder.Append( ClassProvider.FigureSize( Size ), Size != FigureSize.None );
+            builder.Append( ClassProvider.FigureSize( Size ), Size != FigureSize.Default );
 
             base.BuildClasses( builder );
         }
@@ -27,6 +31,9 @@ namespace Blazorise
 
         #region Properties
 
+        /// <summary>
+        /// Gets or sets the figure size.
+        /// </summary>
         [Parameter]
         public FigureSize Size
         {
@@ -39,6 +46,9 @@ namespace Blazorise
             }
         }
 
+        /// <summary>
+        /// Gets or sets the reference to the parent <see cref="Figure"/> component.
+        /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
 
         #endregion

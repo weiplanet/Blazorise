@@ -1,7 +1,4 @@
-﻿#region Using directives
-#endregion
-
-namespace Blazorise
+﻿namespace Blazorise
 {
     /// <summary>
     /// Defines the alignment of an element.
@@ -9,9 +6,9 @@ namespace Blazorise
     public enum Alignment
     {
         /// <summary>
-        /// No alignment will be applied.
+        /// No particular alignment rule will be applied, meaning a default alignment will be used.
         /// </summary>
-        None,
+        Default,
 
         /// <summary>
         /// Aligns an element to the left.

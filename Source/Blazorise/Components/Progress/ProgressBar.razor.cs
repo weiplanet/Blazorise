@@ -1,4 +1,5 @@
 ﻿#region Using directives
+using System.Threading.Tasks;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
 #endregion
@@ -12,26 +13,37 @@ namespace Blazorise
     {
         #region Members
 
-        private Background background = Background.None;
+        private Color color = Color.Primary;
 
         private bool striped;
 
         private bool animated;
 
-        private int? @value;
+        private int? value;
 
         #endregion
 
         #region Methods
 
         /// <inheritdoc/>
+        protected override void OnInitialized()
+        {
+            ParentProgress?.NotifyHasMessage();
+
+            base.OnInitialized();
+        }
+
+        /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.ProgressBar() );
-            builder.Append( ClassProvider.ProgressBarWidth( Value ?? 0 ) );
-            builder.Append( ClassProvider.ProgressBarColor( Background ), Background != Background.None );
+            builder.Append( ClassProvider.ProgressBarColor( Color ), Color != Color.Default );
+            builder.Append( ClassProvider.ProgressBarWidth( Percentage ?? 0 ) );
             builder.Append( ClassProvider.ProgressBarStriped(), Striped );
             builder.Append( ClassProvider.ProgressBarAnimated(), Animated );
+
+            if ( ParentProgress?.ThemeSize != Size.Default )
+                builder.Append( ClassProvider.ProgressBarSize( ParentProgress.ThemeSize ) );
 
             base.BuildClasses( builder );
         }
@@ -39,10 +51,10 @@ namespace Blazorise
         /// <inheritdoc/>
         protected override void BuildStyles( StyleBuilder builder )
         {
-            if ( Value != null )
-                builder.Append( StyleProvider.ProgressBarValue( Value ?? 0 ) );
+            if ( Percentage != null )
+                builder.Append( StyleProvider.ProgressBarValue( Percentage ?? 0 ) );
 
-            builder.Append( StyleProvider.ProgressBarSize( ParentProgress?.Size ?? Size.None ) );
+            builder.Append( StyleProvider.ProgressBarSize( ParentProgress?.ThemeSize ?? Size.Default ) );
 
             base.BuildStyles( builder );
         }
@@ -51,11 +63,12 @@ namespace Blazorise
         /// Sets the progress bar <see cref="Animated"/> flag.
         /// </summary>
         /// <param name="animated">True to animate the progress bar.</param>
-        public void Animate( bool animated )
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        public Task Animate( bool animated )
         {
             Animated = animated;
 
-            InvokeAsync( StateHasChanged );
+            return InvokeAsync( StateHasChanged );
         }
 
         #endregion
@@ -63,15 +76,21 @@ namespace Blazorise
         #region Properties
 
         /// <summary>
-        /// Defines the progress bar background color.
+        /// Calculates the percentage based on the current value and max parameters.
+        /// </summary>
+        protected int? Percentage
+            => Max == 0 ? 0 : (int?)( Value / (float?)Max * 100f );
+
+        /// <summary>
+        /// Defines the progress bar color.
         /// </summary>
         [Parameter]
-        public Background Background
+        public Color Color
         {
-            get => background;
+            get => color;
             set
             {
-                background = value;
+                color = value;
 
                 DirtyClasses();
             }
@@ -123,25 +142,28 @@ namespace Blazorise
         [Parameter]
         public int? Value
         {
-            get => @value;
+            get => value;
             set
             {
-                if ( this.@value == value )
+                if ( this.value == value )
                     return;
 
-                this.@value = value;
+                this.value = value;
 
                 DirtyClasses();
                 DirtyStyles();
             }
         }
 
-        [CascadingParameter] protected Progress ParentProgress { get; set; }
-
         /// <summary>
         /// Specifies the content to be rendered inside this <see cref="ProgressBar"/>.
         /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
+
+        /// <summary>
+        /// Gets or sets the reference to the parent <see cref="Progress"/> component.
+        /// </summary>
+        [CascadingParameter] protected Progress ParentProgress { get; set; }
 
         #endregion
     }

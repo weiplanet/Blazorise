@@ -16,7 +16,7 @@ namespace Blazorise.Snackbar
 
         private class SnackbarInfo
         {
-            public SnackbarInfo( string message,
+            public SnackbarInfo( MarkupString message,
                 string title,
                 SnackbarColor color,
                 string key,
@@ -27,7 +27,8 @@ namespace Blazorise.Snackbar
                 bool showActionButton,
                 string actionButtonText,
                 object actionButtonIcon,
-                double intervalBeforeClose )
+                double? intervalBeforeClose,
+                bool multiline )
             {
                 Message = message;
                 Title = title;
@@ -41,9 +42,10 @@ namespace Blazorise.Snackbar
                 ActionButtonText = actionButtonText;
                 ActionButtonIcon = actionButtonIcon;
                 IntervalBeforeClose = intervalBeforeClose;
+                Multiline = multiline;
             }
 
-            public string Message { get; }
+            public MarkupString Message { get; }
 
             public string Title { get; }
 
@@ -65,14 +67,17 @@ namespace Blazorise.Snackbar
 
             public object ActionButtonIcon { get; }
 
-            public double IntervalBeforeClose { get; }
+            public double? IntervalBeforeClose { get; }
 
             public bool Visible { get; } = true;
+
+            public bool Multiline { get; } = true;
+
         }
 
         private SnackbarStackLocation location = SnackbarStackLocation.Center;
 
-        private List<SnackbarInfo> snackbarInfos = new List<SnackbarInfo>();
+        private readonly List<SnackbarInfo> snackbarInfos = new();
 
         #endregion
 
@@ -93,7 +98,19 @@ namespace Blazorise.Snackbar
         /// <param name="color">Message color.</param>
         /// <param name="options">Additional message options.</param>
         /// <returns>Returns awaitable task.</returns>
-        public Task PushAsync( string message, SnackbarColor color = SnackbarColor.None, Action<SnackbarOptions> options = null )
+        public Task PushAsync( string message, SnackbarColor color = SnackbarColor.Default, Action<SnackbarOptions> options = null )
+        {
+            return PushAsync( (MarkupString)message, null, color, options );
+        }
+
+        /// <summary>
+        /// Pushes the message to the stack to be shown as a snackbar.
+        /// </summary>
+        /// <param name="message">Message text.</param>
+        /// <param name="color">Message color.</param>
+        /// <param name="options">Additional message options.</param>
+        /// <returns>Returns awaitable task.</returns>
+        public Task PushAsync( MarkupString message, SnackbarColor color = SnackbarColor.Default, Action<SnackbarOptions> options = null )
         {
             return PushAsync( message, null, color, options );
         }
@@ -106,12 +123,25 @@ namespace Blazorise.Snackbar
         /// <param name="color">Message color.</param>
         /// <param name="options">Additional message options.</param>
         /// <returns>Returns awaitable task.</returns>
-        public Task PushAsync( string message, string title = null, SnackbarColor color = SnackbarColor.None, Action<SnackbarOptions> options = null )
+        public Task PushAsync( string message, string title = null, SnackbarColor color = SnackbarColor.Default, Action<SnackbarOptions> options = null )
+        {
+            return PushAsync( (MarkupString)message, title, color, options );
+        }
+
+        /// <summary>
+        /// Pushes the message to the stack to be shown as a snackbar.
+        /// </summary>
+        /// <param name="message">Message text.</param>
+        /// <param name="title">Message caption.</param>
+        /// <param name="color">Message color.</param>
+        /// <param name="options">Additional message options.</param>
+        /// <returns>Returns awaitable task.</returns>
+        public Task PushAsync( MarkupString message, string title = null, SnackbarColor color = SnackbarColor.Default, Action<SnackbarOptions> options = null )
         {
             var snackbarOptions = CreateDefaultOptions();
             options?.Invoke( snackbarOptions );
 
-            snackbarInfos.Add( new SnackbarInfo( message, title, color,
+            snackbarInfos.Add( new( message, title, color,
                 snackbarOptions.Key,
                 snackbarOptions.MessageTemplate,
                 snackbarOptions.ShowCloseButton,
@@ -120,7 +150,8 @@ namespace Blazorise.Snackbar
                 snackbarOptions.ShowActionButton,
                 snackbarOptions.ActionButtonText,
                 snackbarOptions.ActionButtonIcon,
-                snackbarOptions.IntervalBeforeClose ) );
+                snackbarOptions.IntervalBeforeClose,
+                snackbarOptions.Multiline ) );
 
             return InvokeAsync( StateHasChanged );
         }
@@ -134,12 +165,12 @@ namespace Blazorise.Snackbar
 
             await InvokeAsync( StateHasChanged );
 
-            await Closed.InvokeAsync( new SnackbarClosedEventArgs( key, closeReason ) );
+            await Closed.InvokeAsync( new( key, closeReason ) );
         }
 
         protected virtual SnackbarOptions CreateDefaultOptions()
         {
-            return new SnackbarOptions
+            return new()
             {
                 Key = IdGenerator.Generate,
                 ShowCloseButton = true,
@@ -167,14 +198,9 @@ namespace Blazorise.Snackbar
         }
 
         /// <summary>
-        /// Allow snackbar to show multiple lines of text.
-        /// </summary>
-        [Parameter] public bool Multiline { get; set; }
-
-        /// <summary>
         /// Defines the default interval (in milliseconds) after which the snackbars will be automatically closed (used if IntervalBeforeClose is not set on PushAsync call).
         /// </summary>
-        [Parameter] public double DefaultInterval { get; set; } = 5000;
+        [Parameter] public double? DefaultInterval { get; set; } = Constants.DefaultIntervalBeforeClose;
 
         /// <summary>
         /// If clicked on snackbar, a close action will be delayed by increasing the <see cref="DefaultInterval"/> time.

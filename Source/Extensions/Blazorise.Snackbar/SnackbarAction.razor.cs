@@ -1,4 +1,5 @@
 ﻿#region Using directives
+using System;
 using System.Threading.Tasks;
 using Blazorise.Snackbar.Utils;
 using Blazorise.Utilities;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace Blazorise.Snackbar
 {
-    public partial class SnackbarAction : BaseComponent
+    public partial class SnackbarAction : BaseComponent, IDisposable
     {
         #region Members
 
@@ -17,22 +18,17 @@ namespace Blazorise.Snackbar
 
         protected override void OnInitialized()
         {
-            if ( ParentSnackbar != null )
-            {
-                ParentSnackbar.NotifySnackbarActionInitialized( this );
-            }
+            ParentSnackbar?.NotifySnackbarActionInitialized( this );
 
             base.OnInitialized();
         }
 
+        /// <inheritdoc/>
         protected override void Dispose( bool disposing )
         {
             if ( disposing )
             {
-                if ( ParentSnackbar != null )
-                {
-                    ParentSnackbar.NotifySnackbarActionRemoved( this );
-                }
+                ParentSnackbar?.NotifySnackbarActionRemoved( this );
             }
 
             base.Dispose( disposing );
@@ -41,14 +37,14 @@ namespace Blazorise.Snackbar
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( "snackbar-action-button" );
-            builder.Append( $"snackbar-action-button-{ ParentSnackbar.Color.GetName()}", ParentSnackbar != null && ParentSnackbar.Color != SnackbarColor.None );
+            builder.Append( $"snackbar-action-button-{ ParentSnackbar.Color.GetName()}", ParentSnackbar != null && ParentSnackbar.Color != SnackbarColor.Default );
 
             base.BuildClasses( builder );
         }
 
         protected Task ClickHandler()
         {
-            return Clicked.InvokeAsync( null );
+            return Clicked.InvokeAsync();
         }
 
         #endregion

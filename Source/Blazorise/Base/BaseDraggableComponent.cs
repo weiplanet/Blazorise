@@ -88,6 +88,11 @@ namespace Blazorise
         #region Properties
 
         /// <summary>
+        /// Gets the valid draggable attribute value if <see cref="Draggable"/> is enabled.
+        /// </summary>
+        protected string DraggableString => Draggable ? "true" : null;
+
+        /// <summary>
         /// Indicates whether the element can be dragged.
         /// </summary>
         [Parameter] public bool Draggable { get; set; }
@@ -103,7 +108,7 @@ namespace Blazorise
         [Parameter] public bool DragPreventDefault { get; set; }
 
         /// <summary>
-        /// The dragend event is fired when a drag operation is being ended (by releasing a mouse button or hitting the escape key).
+        /// The DragEnd event is fired when a drag operation is being ended (by releasing a mouse button or hitting the escape key).
         /// </summary>
         [Parameter] public EventCallback<DragEventArgs> DragEnd { get; set; }
 
@@ -113,7 +118,7 @@ namespace Blazorise
         [Parameter] public bool DragEndPreventDefault { get; set; }
 
         /// <summary>
-        /// The dragenter event is fired when a dragged element or text selection enters a valid drop target.
+        /// The DragEnter event is fired when a dragged element or text selection enters a valid drop target.
         /// </summary>
         [Parameter] public EventCallback<DragEventArgs> DragEnter { get; set; }
 
@@ -123,7 +128,7 @@ namespace Blazorise
         [Parameter] public bool DragEnterPreventDefault { get; set; }
 
         /// <summary>
-        /// The dragleave event is fired when a dragged element or text selection leaves a valid drop target.
+        /// The DragLeave event is fired when a dragged element or text selection leaves a valid drop target.
         /// </summary>
         [Parameter] public EventCallback<DragEventArgs> DragLeave { get; set; }
 
@@ -133,7 +138,7 @@ namespace Blazorise
         [Parameter] public bool DragLeavePreventDefault { get; set; }
 
         /// <summary>
-        /// The dragover event is fired when an element or text selection is being dragged over a valid drop target (every few hundred milliseconds).
+        /// The DragOver event is fired when an element or text selection is being dragged over a valid drop target (every few hundred milliseconds).
         /// </summary>
         [Parameter] public EventCallback<DragEventArgs> DragOver { get; set; }
 
@@ -143,7 +148,7 @@ namespace Blazorise
         [Parameter] public bool DragOverPreventDefault { get; set; }
 
         /// <summary>
-        /// The dragstart event is fired when the user starts dragging an element or text selection.
+        /// The DragStart event is fired when the user starts dragging an element or text selection.
         /// </summary>
         [Parameter] public EventCallback<DragEventArgs> DragStart { get; set; }
 

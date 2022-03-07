@@ -918,9 +918,9 @@ $step-container-padding-top: .5rem !default;
 $step-circle-size: 1.5rem !default;
 $step-circle-border-width: 2px !default;
 
-$step-icon-color: $gray-500 !default
-$step-icon-background: #fff !default
-$step-icon-completed-color: $success !default
+$step-icon-color: $gray-500 !default;
+$step-icon-background: #fff !default;
+$step-icon-completed-color: $success !default;
 $step-icon-active-color: $primary !default;
 
 $step-text-color: $gray-500 !default;
@@ -990,7 +990,7 @@ $pre-scrollable-max-height: 340px !default;
 // Utilities
 
 $displays: none, inline, inline-block, block, table, table-row, table-cell, flex, inline-flex !default;
-$overflows: auto, hidden !default;
+$overflows: auto, hidden, visible, scroll !default;
 $positions: static, relative, absolute, fixed, sticky !default;
 $user-selects: all, auto, none !default;
 
@@ -999,3 +999,7 @@ $user-selects: all, auto, none !default;
 
 $print-page-size: a3 !default;
 $print-body-min-width: map-get($grid-breakpoints, "lg") !default;
+
+// Position
+
+$position-values: ( 0: 0, 50: 50%, 100: 100% ) !default;

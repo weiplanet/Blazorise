@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Blazorise.Extensions;
+using Blazorise.Modules;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -16,15 +17,8 @@ namespace Blazorise
     /// An editor that displays a numeric value and allows a user to edit the value.
     /// </summary>
     /// <typeparam name="TValue">Data-type to be binded by the <see cref="Value"/> property.</typeparam>
-    public partial class NumericEdit<TValue> : BaseTextInput<TValue>, INumericEdit
+    public partial class NumericEdit<TValue> : BaseTextInput<TValue>, IAsyncDisposable
     {
-        #region Members
-
-        // taken from https://github.com/aspnet/AspNetCore/issues/11159
-        private DotNetObjectReference<NumericEditAdapter> dotNetObjectRef;
-
-        #endregion
-
         #region Methods
 
         /// <inheritdoc/>
@@ -35,7 +29,7 @@ namespace Blazorise
             if ( ParentValidation != null )
             {
                 if ( parameters.TryGetValue<Expression<Func<TValue>>>( nameof( ValueExpression ), out var expression ) )
-                    ParentValidation.InitializeInputExpression( expression );
+                    await ParentValidation.InitializeInputExpression( expression );
 
                 if ( parameters.TryGetValue<string>( nameof( Pattern ), out var pattern ) )
                 {
@@ -44,50 +38,22 @@ namespace Blazorise
                         ? inValue
                         : InternalValue;
 
-                    ParentValidation.InitializeInputPattern( pattern, value );
+                    await ParentValidation.InitializeInputPattern( pattern, value );
                 }
 
-                InitializeValidation();
+                await InitializeValidation();
             }
-        }
-
-        /// <inheritdoc/>
-        protected override async Task OnFirstAfterRenderAsync()
-        {
-            dotNetObjectRef ??= CreateDotNetObjectRef( new NumericEditAdapter( this ) );
-
-            await JSRunner.InitializeNumericEdit( dotNetObjectRef, ElementRef, ElementId, Decimals, DecimalsSeparator, Step, Min, Max );
-
-            await base.OnFirstAfterRenderAsync();
-        }
-
-        /// <inheritdoc/>
-        protected override void Dispose( bool disposing )
-        {
-            if ( disposing && Rendered )
-            {
-                JSRunner.DestroyNumericEdit( ElementRef, ElementId );
-                DisposeDotNetObjectRef( dotNetObjectRef );
-            }
-
-            base.Dispose( disposing );
         }
 
         /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.NumericEdit( Plaintext ) );
-            builder.Append( ClassProvider.NumericEditSize( Size ), Size != Size.None );
-            builder.Append( ClassProvider.NumericEditColor( Color ), Color != Color.None );
+            builder.Append( ClassProvider.NumericEditSize( ThemeSize ), ThemeSize != Blazorise.Size.Default );
+            builder.Append( ClassProvider.NumericEditColor( Color ), Color != Color.Default );
             builder.Append( ClassProvider.NumericEditValidation( ParentValidation?.Status ?? ValidationStatus.None ), ParentValidation?.Status != ValidationStatus.None );
 
             base.BuildClasses( builder );
-        }
-
-        /// <inheritdoc/>
-        public Task SetValue( string value )
-        {
-            return CurrentValueHandler( value );
         }
 
         /// <inheritdoc/>
@@ -112,71 +78,22 @@ namespace Blazorise
         /// <inheritdoc/>
         protected override string FormatValueAsString( TValue value )
         {
-            switch ( value )
+            return value switch
             {
-                case null:
-                    return null;
-                case byte @byte:
-                    return Converters.FormatValue( @byte, CurrentCultureInfo );
-                case short @short:
-                    return Converters.FormatValue( @short, CurrentCultureInfo );
-                case int @int:
-                    return Converters.FormatValue( @int, CurrentCultureInfo );
-                case long @long:
-                    return Converters.FormatValue( @long, CurrentCultureInfo );
-                case float @float:
-                    return Converters.FormatValue( @float, CurrentCultureInfo );
-                case double @double:
-                    return Converters.FormatValue( @double, CurrentCultureInfo );
-                case decimal @decimal:
-                    return Converters.FormatValue( @decimal, CurrentCultureInfo );
-                case sbyte @sbyte:
-                    return Converters.FormatValue( @sbyte, CurrentCultureInfo );
-                case ushort @ushort:
-                    return Converters.FormatValue( @ushort, CurrentCultureInfo );
-                case uint @uint:
-                    return Converters.FormatValue( @uint, CurrentCultureInfo );
-                case ulong @ulong:
-                    return Converters.FormatValue( @ulong, CurrentCultureInfo );
-                default:
-                    throw new InvalidOperationException( $"Unsupported type {value.GetType()}" );
-            }
-        }
-
-        /// <inheritdoc/>
-        protected override async Task OnBlurHandler( FocusEventArgs eventArgs )
-        {
-            await base.OnBlurHandler( eventArgs );
-
-            if ( !string.IsNullOrEmpty( CurrentValueAsString )
-                && CurrentValue is IComparable number
-                && number != null )
-            {
-                var defaultValue = DefaultValue as IComparable;
-
-                // We still need to allow for default value to be entered.
-                // - Non nullable value: 0 or empty
-                // - Nullable value:     null or empty
-                if ( number.CompareTo( defaultValue ) != 0 )
-                {
-                    if ( Max is IComparable max && max.CompareTo( defaultValue ) != 0 && number.CompareTo( max ) > 0 )
-                    {
-                        number = max;
-                    }
-                    else if ( Min is IComparable min && min.CompareTo( defaultValue ) != 0 && number.CompareTo( min ) < 0 )
-                    {
-                        number = min;
-                    }
-
-                    // cast back to TValue and check if number has changed
-                    if ( Converters.TryChangeType<TValue>( number, out var currentValue, CurrentCultureInfo )
-                        && !CurrentValue.IsEqual( currentValue ) )
-                    {
-                        // number has changed so we need to re-set the CurrentValue and re-run any validation
-                        await CurrentValueHandler( FormatValueAsString( currentValue ) );
-                    }
-                }
-            }
+                null => null,
+                byte @byte => Converters.FormatValue( @byte, CurrentCultureInfo ),
+                short @short => Converters.FormatValue( @short, CurrentCultureInfo ),
+                int @int => Converters.FormatValue( @int, CurrentCultureInfo ),
+                long @long => Converters.FormatValue( @long, CurrentCultureInfo ),
+                float @float => Converters.FormatValue( @float, CurrentCultureInfo ),
+                double @double => Converters.FormatValue( @double, CurrentCultureInfo ),
+                decimal @decimal => Converters.FormatValue( @decimal, CurrentCultureInfo ),
+                sbyte @sbyte => Converters.FormatValue( @sbyte, CurrentCultureInfo ),
+                ushort @ushort => Converters.FormatValue( @ushort, CurrentCultureInfo ),
+                uint @uint => Converters.FormatValue( @uint, CurrentCultureInfo ),
+                ulong @ulong => Converters.FormatValue( @ulong, CurrentCultureInfo ),
+                _ => throw new InvalidOperationException( $"Unsupported type {value.GetType()}" ),
+            };
         }
 
         #endregion
@@ -196,7 +113,6 @@ namespace Blazorise
         {
             get
             {
-                // TODO: find the right culture based on DecimalsSeparator
                 if ( !string.IsNullOrEmpty( Culture ) )
                 {
                     return CultureInfo.GetCultureInfo( Culture );
@@ -227,17 +143,7 @@ namespace Blazorise
         /// <summary>
         /// Specifies the interval between valid values.
         /// </summary>
-        [Parameter] public decimal? Step { get; set; }
-
-        /// <summary>
-        /// Maximum number of decimal places after the decimal separator.
-        /// </summary>
-        [Parameter] public int Decimals { get; set; } = 2;
-
-        /// <summary>
-        /// String to use as the decimal separator in numeric values.
-        /// </summary>
-        [Parameter] public string DecimalsSeparator { get; set; } = ".";
+        [Parameter] public decimal? Step { get; set; } = 1;
 
         /// <summary>
         /// Helps define the language of an element.
@@ -258,9 +164,8 @@ namespace Blazorise
         [Parameter] public TValue Max { get; set; }
 
         /// <summary>
-        /// The size attribute specifies the visible width, in characters, of an <input> element.
+        /// The size attribute specifies the visible width, in characters, of an input element. https://www.w3schools.com/tags/att_input_size.asp
         /// </summary>
-        /// <see cref="https://www.w3schools.com/tags/att_input_size.asp"/>
         [Parameter] public int? VisibleCharacters { get; set; }
 
         #endregion

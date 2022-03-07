@@ -1,9 +1,8 @@
 ﻿#region Using directives
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
+using Blazorise.Utilities;
 #endregion
 
 namespace Blazorise
@@ -15,8 +14,21 @@ namespace Blazorise
     {
         #region Basic methods
 
+        /// <summary>
+        /// Compares two strings to see if they are equal.
+        /// </summary>
+        /// <param name="value">First string.</param>
+        /// <param name="compare">Second string.</param>
+        /// <returns>True if they are equal.</returns>
         public static bool IsEqual( string value, string compare ) => value == compare;
 
+        /// <summary>
+        /// Checks if the given string length is in the given range.
+        /// </summary>
+        /// <param name="value">String to check for the range.</param>
+        /// <param name="min">Minimum length allowed.</param>
+        /// <param name="max">Maximum length allowed.</param>
+        /// <returns>True if string length is in the range.</returns>
         public static bool IsLength( string value, int min, int max ) => value != null && value.Length >= min && value.Length <= max;
 
         /// <summary>
@@ -132,6 +144,29 @@ namespace Blazorise
         /// </summary>
         /// <param name="e"></param>
         public static void None( ValidatorEventArgs e ) => e.Status = ValidationStatus.None;
+
+        /// <summary>
+        /// Checks if the boolean based input is checked.
+        /// </summary>
+        /// <param name="e"></param>
+        public static void IsChecked( ValidatorEventArgs e )
+        {
+            Converters.TryChangeType<bool>( e.Value, out var result );
+
+            e.Status = result ? ValidationStatus.Success : ValidationStatus.Error;
+        }
+
+        /// <summary>
+        /// Checks if the selection based input has a valid value selected. Valid values are
+        /// anything except for <c>null</c>, <c>string.Empty</c>, or <c>0</c>.
+        /// </summary>
+        /// <param name="e"></param>
+        public static void IsSelected( ValidatorEventArgs e )
+        {
+            var value = e.Value?.ToString();
+
+            e.Status = string.IsNullOrEmpty( value ) || value == "0" ? ValidationStatus.Error : ValidationStatus.Success;
+        }
 
         #endregion
     }

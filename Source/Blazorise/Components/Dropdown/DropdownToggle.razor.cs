@@ -1,5 +1,7 @@
 ﻿#region Using directives
+using System;
 using System.Threading.Tasks;
+using Blazorise.Modules;
 using Blazorise.States;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
@@ -11,7 +13,7 @@ namespace Blazorise
     /// <summary>
     /// Toggles the dropdown menu visibility on or off.
     /// </summary>
-    public partial class DropdownToggle : BaseComponent, ICloseActivator
+    public partial class DropdownToggle : BaseComponent, ICloseActivator, IAsyncDisposable
     {
         #region Members
 
@@ -30,20 +32,31 @@ namespace Blazorise
         #region Methods
 
         /// <inheritdoc/>
-        protected override async Task OnFirstAfterRenderAsync()
+        protected override void OnInitialized()
+        {
+            if ( Theme != null )
+            {
+                Theme.Changed += OnThemeChanged;
+            }
+
+            base.OnInitialized();
+        }
+
+        /// <inheritdoc/>
+        protected override Task OnFirstAfterRenderAsync()
         {
             dotNetObjectRef ??= CreateDotNetObjectRef( new CloseActivatorAdapter( this ) );
 
-            await base.OnFirstAfterRenderAsync();
+            return base.OnFirstAfterRenderAsync();
         }
 
         /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
-            builder.Append( ClassProvider.DropdownToggle() );
-            builder.Append( ClassProvider.DropdownToggleColor( Color ), Color != Color.None && !Outline );
-            builder.Append( ClassProvider.DropdownToggleOutline( Color ), Color != Color.None && Outline );
-            builder.Append( ClassProvider.DropdownToggleSize( Size ), Size != Size.None );
+            builder.Append( ClassProvider.DropdownToggle( ParentDropdown?.IsDropdownSubmenu == true ) );
+            builder.Append( ClassProvider.DropdownToggleColor( Color ), Color != Color.Default && !Outline );
+            builder.Append( ClassProvider.DropdownToggleOutline( Color ), Color != Color.Default && Outline );
+            builder.Append( ClassProvider.DropdownToggleSize( ThemeSize ), ThemeSize != Blazorise.Size.Default );
             builder.Append( ClassProvider.DropdownToggleSplit(), Split );
             builder.Append( ClassProvider.DropdownToggleIcon( IsToggleIconVisible ) );
 
@@ -54,7 +67,7 @@ namespace Blazorise
         /// Disposes all the used resources.
         /// </summary>
         /// <param name="disposing">True if object is disposing.</param>
-        protected override void Dispose( bool disposing )
+        protected override async ValueTask DisposeAsync( bool disposing )
         {
             if ( disposing && Rendered )
             {
@@ -63,48 +76,71 @@ namespace Blazorise
                 {
                     jsRegistered = false;
 
-                    _ = JSRunner.UnregisterClosableComponent( this );
+                    var task = JSClosableModule.Unregister( this );
+
+                    try
+                    {
+                        await task;
+                    }
+                    catch when ( task.IsCanceled )
+                    {
+                    }
+                    catch ( Microsoft.JSInterop.JSDisconnectedException )
+                    {
+                    }
                 }
 
                 DisposeDotNetObjectRef( dotNetObjectRef );
+                dotNetObjectRef = null;
+
+                if ( Theme != null )
+                {
+                    Theme.Changed -= OnThemeChanged;
+                }
             }
 
-            base.Dispose( disposing );
+            await base.DisposeAsync( disposing );
         }
 
         /// <summary>
         /// Handles the item onclick event.
         /// </summary>
         /// <returns>A task that represents the asynchronous operation.</returns>
-        protected Task ClickHandler()
+        protected async Task ClickHandler()
         {
-            if ( !Disabled )
-            {
-                ParentDropdown?.Toggle();
-            }
+            if ( Disabled )
+                return;
 
-            return Task.CompletedTask;
+            if ( ParentDropdown != null )
+                await ParentDropdown.Toggle( ElementId );
+
+            await Clicked.InvokeAsync();
         }
+
+
+
 
         /// <summary>
         /// Returns true of the parent dropdown-menu is safe to be closed.
         /// </summary>
         /// <param name="elementId">Id of an element.</param>
         /// <param name="closeReason">Close reason.</param>
+        /// <param name="isChildClicked">Indicates if the child element was clicked.</param>
         /// <returns>True if it's safe to be closed.</returns>
         public Task<bool> IsSafeToClose( string elementId, CloseReason closeReason, bool isChildClicked )
         {
-            return Task.FromResult( closeReason == CloseReason.EscapeClosing || elementId != ElementId );
+            return Task.FromResult( closeReason == CloseReason.EscapeClosing || ( ParentDropdown?.ShouldClose ?? true && ( elementId != ElementId && ParentDropdown?.SelectedDropdownElementId != ElementId ) ) );
         }
 
         /// <summary>
         /// Forces the parent dropdown to close the dropdown-menu.
         /// </summary>
-        /// <param name="closeReason"></param>
-        /// <returns></returns>
+        /// <param name="closeReason">Reason for closing the parent.</param>
+        /// <returns>Returns the awaitable task.</returns>
         public Task Close( CloseReason closeReason )
         {
-            ParentDropdown?.Hide();
+            if ( ParentDropdown != null )
+                return ParentDropdown.Hide();
 
             return Task.CompletedTask;
         }
@@ -113,11 +149,16 @@ namespace Blazorise
         /// Sets focus on the input element, if it can be focused.
         /// </summary>
         /// <param name="scrollToElement">If true the browser should scroll the document to bring the newly-focused element into view.</param>
-        public void Focus( bool scrollToElement = true )
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        public Task Focus( bool scrollToElement = true )
         {
-            _ = JSRunner.Focus( ElementRef, ElementId, scrollToElement );
+            return JSUtilitiesModule.Focus( ElementRef, ElementId, scrollToElement ).AsTask();
         }
 
+        /// <summary>
+        /// Handles the visibility styles and JS interop states.
+        /// </summary>
+        /// <param name="visible">True if component is visible.</param>
         protected virtual void HandleVisibilityStyles( bool visible )
         {
             if ( visible )
@@ -126,7 +167,7 @@ namespace Blazorise
 
                 ExecuteAfterRender( async () =>
                 {
-                    await JSRunner.RegisterClosableComponent( dotNetObjectRef, ElementRef );
+                    await JSClosableModule.Register( dotNetObjectRef, ElementRef );
                 } );
             }
             else
@@ -135,12 +176,25 @@ namespace Blazorise
 
                 ExecuteAfterRender( async () =>
                 {
-                    await JSRunner.UnregisterClosableComponent( this );
+                    await JSClosableModule.Unregister( this );
                 } );
             }
 
             DirtyClasses();
             DirtyStyles();
+        }
+
+        /// <summary>
+        /// An event raised when theme settings changes.
+        /// </summary>
+        /// <param name="sender">An object that raised the event.</param>
+        /// <param name="eventArgs"></param>
+        private void OnThemeChanged( object sender, EventArgs eventArgs )
+        {
+            DirtyClasses();
+            DirtyStyles();
+
+            InvokeAsync( StateHasChanged );
         }
 
         #endregion
@@ -166,20 +220,35 @@ namespace Blazorise
         protected bool IsToggleIconVisible => ToggleIconVisible.GetValueOrDefault( Theme?.DropdownOptions?.ToggleIconVisible ?? true );
 
         /// <summary>
+        /// Gets the size based on the theme settings.
+        /// </summary>
+        protected Size ThemeSize => Size ?? Theme?.DropdownOptions?.Size ?? Blazorise.Size.Default;
+
+        /// <summary>
         /// Gets the data-boundary value.
         /// </summary>
         protected string DataBoundary
             => ParentDropdown?.InResponsiveTable == true ? "window" : null;
 
         /// <summary>
+        /// Gets or sets the <see cref="IJSClosableModule"/> instance.
+        /// </summary>
+        [Inject] public IJSClosableModule JSClosableModule { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IJSUtilitiesModule"/> instance.
+        /// </summary>
+        [Inject] public IJSUtilitiesModule JSUtilitiesModule { get; set; }
+
+        /// <summary>
         /// Gets or sets the dropdown color.
         /// </summary>
-        [Parameter] public Color Color { get; set; } = Color.None;
+        [Parameter] public Color Color { get; set; } = Color.Default;
 
         /// <summary>
         /// Gets or sets the dropdown size.
         /// </summary>
-        [Parameter] public Size Size { get; set; } = Size.None;
+        [Parameter] public Size? Size { get; set; }
 
         /// <summary>
         /// Button outline.
@@ -249,6 +318,11 @@ namespace Blazorise
         [Parameter] public int? TabIndex { get; set; }
 
         /// <summary>
+        /// Occurs when the toggle button is clicked.
+        /// </summary>
+        [Parameter] public EventCallback Clicked { get; set; }
+
+        /// <summary>
         /// The applied theme.
         /// </summary>
         [CascadingParameter] protected Theme Theme { get; set; }
@@ -259,7 +333,7 @@ namespace Blazorise
         [CascadingParameter] protected Dropdown ParentDropdown { get; set; }
 
         /// <summary>
-        /// Gets or sets the component child content.
+        /// Specifies the content to be rendered inside this <see cref="DropdownToggle"/>.
         /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
 

@@ -5,23 +5,25 @@ using Microsoft.AspNetCore.Components;
 
 namespace Blazorise
 {
+    /// <summary>
+    /// A card is a flexible and extensible content container. It includes options for headers and footers,
+    /// a wide variety of content, contextual background colors, and powerful display options.
+    /// </summary>
     public partial class Card : BaseContainerComponent
     {
         #region Members
 
         private bool isWhiteText;
 
-        private Background background = Background.None;
-
         #endregion
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.Card() );
             builder.Append( ClassProvider.CardWhiteText(), WhiteText );
-            builder.Append( ClassProvider.CardBackground( Background ), Background != Background.None );
 
             base.BuildClasses( builder );
         }
@@ -29,6 +31,11 @@ namespace Blazorise
         #endregion
 
         #region Properties
+
+        /// <summary>
+        /// True if card is placed inside of a deck.
+        /// </summary>
+        protected bool InsideDeck => ParentCardDeck != null;
 
         /// <summary>
         /// Sets the white text when using the darker background.
@@ -46,19 +53,9 @@ namespace Blazorise
         }
 
         /// <summary>
-        /// Gets or sets the bar background color.
+        /// Gets or sets the reference to the parent deck component.
         /// </summary>
-        [Parameter]
-        public Background Background
-        {
-            get => background;
-            set
-            {
-                background = value;
-
-                DirtyClasses();
-            }
-        }
+        [CascadingParameter] protected CardDeck ParentCardDeck { get; set; }
 
         #endregion
     }

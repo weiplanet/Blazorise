@@ -1,7 +1,18 @@
-﻿@typeparam TItem
+﻿@inherits BaseAfterRenderComponent
+@typeparam TItem
 @typeparam TValue
-<Dropdown @ref="@dropdownRef" ElementId="@ElementId" Class="@DropdownClassNames" Style="@Style" Attributes="@Attributes" Visible="@DropdownVisible">
-    <Validation Validator="@(Validator ?? ValidationRule.None)">
+
+<Dropdown ElementId="@ElementId" Class="@DropdownClassNames" Style="@CssStyle" Attributes="@Attributes" Visible="@(DropdownVisible || NotFoundVisible)">
+    <Validation Validator="@(Validator ?? ValidationRule.None)" AsyncValidator="@AsyncValidator">
+
+        @if ( Multiple )
+        {
+            @foreach ( var selectedText in SelectedTexts )
+            {
+                <Badge Color="@MultipleBadgeColor" Margin="Margin.Is2.FromStart" CloseClicked="async () => await RemoveMultipleText( selectedText )">@selectedText</Badge>
+            }
+        }
+
         <TextEdit @ref="@textEditRef"
                   Role="TextRole.Search"
                   Text="@SelectedText"
@@ -13,10 +24,10 @@
                   KeyDown="@OnTextKeyDownHandler"
                   FocusIn="@OnTextFocusInHandler"
                   Blur="@OnTextBlurHandler"
-                  ChangeTextOnKeyPress="@ChangeTextOnKeyPress"
-                  DelayTextOnKeyPress="@DelayTextOnKeyPress"
-                  DelayTextOnKeyPressInterval="@DelayTextOnKeyPressInterval"
-                  CustomValidationValue="@(()=>SelectedValue?.ToString())">
+                  Immediate="@Immediate"
+                  Debounce="@Debounce"
+                  DebounceInterval="@DebounceInterval"
+                  CustomValidationValue="@GetValidationValue">
             <Feedback>
                 <ValidationError />
                 <ValidationSuccess />
@@ -24,17 +35,43 @@
             </Feedback>
         </TextEdit>
     </Validation>
-    <DropdownMenu>
+    <DropdownMenu @ref="DropdownMenuRef">
+        @if ( NotFoundVisible )
+        {
+            <DropdownItem Disabled>
+                @NotFoundContent( SelectedText )
+            </DropdownItem>
+        }
+
         @if ( DropdownVisible )
         {
+            // once the menu is opened we need to register it as closable so that user could properly close it with escape key
+            // without accidentally triggering the parent component closing
+            if ( !jsRegistered )
+            {
+                jsRegistered = true;
+
+                ExecuteAfterRender( async () =>
+                {
+                    await JSClosableModule.Register( dotNetObjectRef, ElementRef );
+                } );
+            }
+
             for ( int i = 0; i < FilteredData.Count; ++i )
             {
                 var item = FilteredData[i];
 
-                var text = TextField?.Invoke( item );
+                var text = GetDisplayText( item );
                 var value = ValueField != null ? ValueField.Invoke( item ) : default;
 
-                <DropdownItem Active="@(i == ActiveItemIndex)" Value="@value" Clicked="@OnDropdownItemClicked">@text</DropdownItem>
+                @if ( ItemContent is not null )
+                {
+                    <DropdownItem @key="item" Active="@(i == ActiveItemIndex)" Value="@value" Clicked="@OnDropdownItemClicked">@ItemContent(new (item, value, text))</DropdownItem>
+                }
+                else
+                {
+                    <DropdownItem @key="item" Active="@(i == ActiveItemIndex)" Value="@value" Clicked="@OnDropdownItemClicked">@text</DropdownItem>
+                }
             }
         }
     </DropdownMenu>

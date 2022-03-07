@@ -4,14 +4,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Blazorise.Modules;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 #endregion
 
 namespace Blazorise.AntDesign
 {
-    public partial class Select<TValue> : Blazorise.Select<TValue>, ICloseActivator
+    public partial class Select<TValue> : Blazorise.Select<TValue>, ICloseActivator, IAsyncDisposable
     {
         #region Members
 
@@ -42,30 +44,34 @@ namespace Blazorise.AntDesign
 
         protected override async Task OnFirstAfterRenderAsync()
         {
+            await base.OnFirstAfterRenderAsync();
+
             dotNetObjectRef ??= CreateDotNetObjectRef( new CloseActivatorAdapter( this ) );
 
-            await base.OnFirstAfterRenderAsync();
+            // since we do some custom rendering we need to refresh component state to trigger first valid render.
+            await InvokeAsync( StateHasChanged );
         }
 
-        protected override void Dispose( bool disposing )
+        protected override async ValueTask DisposeAsync( bool disposing )
         {
             if ( disposing && Rendered )
             {
                 // TODO: switch to IAsyncDisposable
-                _ = JSRunner.UnregisterClosableComponent( this );
+                await JSClosableModule.Unregister( this );
 
                 DisposeDotNetObjectRef( dotNetObjectRef );
+                dotNetObjectRef = null;
             }
 
-            base.Dispose( disposing );
+            await base.DisposeAsync( disposing );
         }
 
-        protected async Task OnSelectorClickHandler()
+        protected Task OnSelectorClickHandler()
         {
             if ( Expanded )
-                return;
+                return Task.CompletedTask;
 
-            await Expand();
+            return Expand();
         }
 
         public Task<bool> IsSafeToClose( string elementId, CloseReason closeReason, bool isChildClicked )
@@ -85,18 +91,21 @@ namespace Blazorise.AntDesign
         private async Task Expand()
         {
             // An element location must be known every time we need to show the dropdown. The reason is mainly
-            // because sometimes input can have diferent offset based on the changes on the page. For example 
-            // when validation is trigered the input can be pushed down by the error messages.
-            elementInfo = await JSRunner.GetElementInfo( ElementRef, ElementId );
+            // because sometimes input can have different offset based on the changes on the page. For example
+            // when validation is triggered the input can be pushed down by the error messages.
+            elementInfo = await JSUtilitiesModule.GetElementInfo( ElementRef, ElementId );
 
-            await JSRunner.RegisterClosableComponent( dotNetObjectRef, ElementRef );
+            await JSClosableModule.Register( dotNetObjectRef, ElementRef );
 
             Expanded = true;
+
+            // automatically set focus to the dropdown so that we can make it auto-close on blur event
+            ExecuteAfterRender( async () => await DropdownElementRef.FocusAsync() );
         }
 
         private async Task Collapse()
         {
-            await JSRunner.UnregisterClosableComponent( this );
+            await JSClosableModule.Unregister( this );
 
             Expanded = false;
         }
@@ -119,7 +128,7 @@ namespace Blazorise.AntDesign
 
         internal async Task NotifySelectValueChanged( TValue selectValue )
         {
-            // We cuold just set SelectedValue(s) directly but that would skip validation process 
+            // We cuold just set SelectedValue(s) directly but that would skip validation process
             // and we would also need to handle event handlers.
             // Thats why we need to call CurrentValueHandler that will trigger all that is required.
             if ( Multiple )
@@ -193,6 +202,19 @@ namespace Blazorise.AntDesign
             return Task.CompletedTask;
         }
 
+        // NOTE: Don't remove tabindex from dropdown `<div tabindex="-1" @onblur="@OnDropdownBlur">`! It must be defined for focus-out to work.
+        protected async Task OnDropdownBlur( FocusEventArgs eventArgs )
+        {
+            if ( Expanded )
+            {
+                // Give enough time for other events to do their stuff before closing
+                // the select menu.
+                await Task.Delay( 250 );
+
+                await Collapse();
+            }
+        }
+
         #endregion
 
         #region Properties
@@ -210,6 +232,8 @@ namespace Blazorise.AntDesign
             get => inputElementId ??= IdGenerator.Generate;
             set => inputElementId = value;
         }
+
+        protected ElementReference DropdownElementRef { get; set; }
 
         /// <summary>
         /// Gets the selected items render fragments.
@@ -257,13 +281,16 @@ namespace Blazorise.AntDesign
             {
                 var sb = new StringBuilder( "ant-select ant-select-show-arrow" );
 
+                if ( ThemeSize != Blazorise.Size.Default )
+                    sb.Append( $" ant-select-{ClassProvider.ToSize( ThemeSize )}" );
+
                 if ( Multiple )
                     sb.Append( " ant-select-multiple" );
                 else
                     sb.Append( " ant-select-single" );
 
                 if ( Expanded )
-                    sb.Append( " ant-select-open" );
+                    sb.Append( " ant-select-focused ant-select-open" );
 
                 if ( Disabled )
                     sb.Append( " ant-select-disabled" );
@@ -292,6 +319,8 @@ namespace Blazorise.AntDesign
 
         string DropdownInnerStyleNames
             => $"max-height: {( MaxVisibleItems == null ? 256 : MaxVisibleItems * 32 )}px; overflow-y: auto; overflow-anchor: none;";
+
+        [Inject] public IJSClosableModule JSClosableModule { get; set; }
 
         #endregion
     }

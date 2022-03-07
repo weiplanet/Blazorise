@@ -1,4 +1,5 @@
 ﻿#region Using directives
+using System;
 using Blazorise.States;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
@@ -6,56 +7,89 @@ using Microsoft.AspNetCore.Components;
 
 namespace Blazorise
 {
-    public partial class DropdownMenu : BaseComponent
+    /// <summary>
+    /// Main container for a <see cref="Dropdown"/> menu that can contain or or more <see cref="DropdownItem"/>'s.
+    /// </summary>
+    public partial class DropdownMenu : BaseComponent, IDisposable
     {
         #region Members
 
         private DropdownState parentDropdownState;
 
+        private string maxMenuHeight;
+
         #endregion
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void OnInitialized()
         {
-            if ( ParentDropdown != null )
+            if ( ParentDropdown is not null )
             {
-                ParentDropdown.VisibleChanged += OnVisibleChanged;
+                ParentDropdown.AddDropdownMenu( this );
             }
 
             base.OnInitialized();
         }
 
+        /// <inheritdoc/>
         protected override void Dispose( bool disposing )
         {
             if ( disposing )
             {
-                if ( ParentDropdown != null )
+                if ( ParentDropdown is not null )
                 {
-                    ParentDropdown.VisibleChanged -= OnVisibleChanged;
+                    ParentDropdown.RemoveDropdownMenu( this );
                 }
             }
 
             base.Dispose( disposing );
         }
 
-        protected virtual void OnVisibleChanged( object sender, bool e )
-        {
-        }
-
+        /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.DropdownMenu() );
+            builder.Append( ClassProvider.DropdownMenuScrollable(), MaxMenuHeight != null );
             builder.Append( ClassProvider.DropdownMenuVisible( ParentDropdownState.Visible ) );
             builder.Append( ClassProvider.DropdownMenuRight(), ParentDropdownState.RightAligned );
 
             base.BuildClasses( builder );
         }
 
+        /// <inheritdoc/>
+        protected override void BuildStyles( StyleBuilder builder )
+        {
+            if ( MaxMenuHeight != null )
+                builder.Append( $"--dropdown-list-menu-max-height: {MaxMenuHeight};" );
+
+            base.BuildStyles( builder );
+        }
+
+        /// <summary>
+        /// Handles the dropdown visibility state change.
+        /// </summary>
+        /// <param name="visible">Visibility flag.</param>
+        internal protected virtual void OnVisibleChanged( bool visible )
+        {
+        }
+
         #endregion
 
         #region Properties
 
+        /// <inheritdoc/>
+        protected override bool ShouldAutoGenerateId => true;
+
+        /// <summary>
+        /// Specifies the content to be rendered inside this <see cref="Container"/>.
+        /// </summary>
+        [Parameter] public RenderFragment ChildContent { get; set; }
+
+        /// <summary>
+        /// Cascaded <see cref="Dropdown"/> component state object.
+        /// </summary>
         [CascadingParameter]
         protected DropdownState ParentDropdownState
         {
@@ -71,9 +105,25 @@ namespace Blazorise
             }
         }
 
-        [CascadingParameter] protected Dropdown ParentDropdown { get; set; }
+        /// <summary>
+        /// Sets the maximum height of the dropdown menu.
+        /// </summary>
+        [Parameter]
+        public string MaxMenuHeight
+        {
+            get => maxMenuHeight;
+            set
+            {
+                maxMenuHeight = value;
 
-        [Parameter] public RenderFragment ChildContent { get; set; }
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the reference to the parent <see cref="Dropdown"/> component.
+        /// </summary>
+        [CascadingParameter] protected Dropdown ParentDropdown { get; set; }
 
         #endregion
     }

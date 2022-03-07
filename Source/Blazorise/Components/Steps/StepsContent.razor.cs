@@ -1,5 +1,6 @@
 ﻿#region Using directives
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Blazorise.States;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
@@ -7,6 +8,9 @@ using Microsoft.AspNetCore.Components;
 
 namespace Blazorise
 {
+    /// <summary>
+    /// Main content area of <see cref="Steps"/> component that can be placed anywhere on a page.
+    /// </summary>
     public partial class StepsContent : BaseComponent
     {
         #region Members
@@ -19,6 +23,7 @@ namespace Blazorise
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.StepsContent() );
@@ -38,11 +43,16 @@ namespace Blazorise
                 stepPanels.Remove( name );
         }
 
-        public void SelectPanel( string name )
+        /// <summary>
+        /// Select the panel by name.
+        /// </summary>
+        /// <param name="name">Panel name.</param>
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        public Task SelectPanel( string name )
         {
             SelectedPanel = name;
 
-            InvokeAsync( StateHasChanged );
+            return InvokeAsync( StateHasChanged );
         }
 
         #endregion
@@ -86,6 +96,9 @@ namespace Blazorise
         /// </summary>
         [Parameter] public EventCallback<string> SelectedPanelChanged { get; set; }
 
+        /// <summary>
+        /// Specifies the content to be rendered inside this <see cref="StepsContent"/>.
+        /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
 
         #endregion

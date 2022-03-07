@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Components;
 
 namespace Blazorise
 {
+    /// <summary>
+    /// A wrapper for collapse header.
+    /// </summary>
     public partial class CollapseHeader : BaseComponent
     {
         #region Members
@@ -14,27 +17,44 @@ namespace Blazorise
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
-            builder.Append( ClassProvider.CollapseHeader() );
+            builder.Append( ClassProvider.CollapseHeader( ParentCollapse?.InsideAccordion == true ) );
 
             base.BuildClasses( builder );
         }
 
-        protected Task ClickHandler()
+        /// <summary>
+        /// Handles the header onclick event.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        protected async Task ClickHandler()
         {
-            ParentCollapse.Toggle();
+            if ( ParentCollapse != null )
+                await ParentCollapse.Toggle();
 
-            return Task.CompletedTask;
+            await Clicked.InvokeAsync();
         }
 
         #endregion
 
         #region Properties
 
-        [CascadingParameter] protected Collapse ParentCollapse { get; set; }
+        /// <summary>
+        /// Occurs when the header is clicked.
+        /// </summary>
+        [Parameter] public EventCallback Clicked { get; set; }
 
+        /// <summary>
+        /// Specifies the content to be rendered inside this <see cref="CollapseHeader"/>.
+        /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
+
+        /// <summary>
+        /// Gets or sets the reference to the parent <see cref="Collapse"/> component.
+        /// </summary>
+        [CascadingParameter] public Collapse ParentCollapse { get; set; }
 
         #endregion
     }

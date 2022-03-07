@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Components;
 
 namespace Blazorise
 {
+    /// <summary>
+    /// A wrapper for collapse content.
+    /// </summary>
     public partial class CollapseBody : BaseComponent
     {
         #region Members
@@ -15,15 +18,37 @@ namespace Blazorise
 
         #region Constructors
 
+        /// <summary>
+        /// A default <see cref="CollapseBody"/> constructor.
+        /// </summary>
         public CollapseBody()
         {
-            ContentClassBuilder = new ClassBuilder( BuildBodyClasses );
+            ContentClassBuilder = new( BuildBodyClasses );
         }
 
         #endregion
 
         #region Methods
 
+        /// <inheritdoc/>
+        protected override void BuildClasses( ClassBuilder builder )
+        {
+            builder.Append( ClassProvider.CollapseBody( ParentCollapse?.InsideAccordion == true ) );
+            builder.Append( ClassProvider.CollapseBodyActive( ParentCollapse?.InsideAccordion == true, Visible ) );
+
+            base.BuildClasses( builder );
+        }
+
+        /// <summary>
+        /// Builds the classnames for a collapse body element.
+        /// </summary>
+        /// <param name="builder">Class builder used to append the classnames.</param>
+        private void BuildBodyClasses( ClassBuilder builder )
+        {
+            builder.Append( ClassProvider.CollapseBodyContent( ParentCollapse?.InsideAccordion == true ) );
+        }
+
+        /// <inheritdoc/>
         protected internal override void DirtyClasses()
         {
             ContentClassBuilder.Dirty();
@@ -31,27 +56,17 @@ namespace Blazorise
             base.DirtyClasses();
         }
 
-        private void BuildBodyClasses( ClassBuilder builder )
-        {
-            builder.Append( ClassProvider.CollapseBodyContent() );
-        }
-
-        protected override void BuildClasses( ClassBuilder builder )
-        {
-            builder.Append( ClassProvider.CollapseBody() );
-            builder.Append( ClassProvider.CollapseBodyActive( Visible ) );
-
-            base.BuildClasses( builder );
-        }
-
         #endregion
 
         #region Properties
 
+        /// <summary>
+        /// Body container class builder.
+        /// </summary>
         protected ClassBuilder ContentClassBuilder { get; private set; }
 
         /// <summary>
-        /// Gets dialog container class-names.
+        /// Gets body container class-names.
         /// </summary>
         protected string ContentClassNames => ContentClassBuilder.Class;
 
@@ -70,6 +85,14 @@ namespace Blazorise
             }
         }
 
+        /// <summary>
+        /// Gets or sets the cascaded parent collapse component.
+        /// </summary>
+        [CascadingParameter] public Collapse ParentCollapse { get; set; }
+
+        /// <summary>
+        /// Specifies the content to be rendered inside this <see cref="CollapseBody"/>.
+        /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
 
         #endregion

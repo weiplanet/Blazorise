@@ -1,6 +1,5 @@
 ﻿#region Using directives
 using System;
-using System.Globalization;
 using System.Threading.Tasks;
 using Blazorise.States;
 using Blazorise.Utilities;
@@ -9,7 +8,10 @@ using Microsoft.AspNetCore.Components;
 
 namespace Blazorise
 {
-    public partial class Step : BaseComponent
+    /// <summary>
+    /// Clickable item in a <see cref="Steps"/> component.
+    /// </summary>
+    public partial class Step : BaseComponent, IDisposable
     {
         #region Members
 
@@ -17,65 +19,74 @@ namespace Blazorise
 
         private bool completed;
 
-        private Color color = Color.None;
+        private Color color = Color.Default;
 
         #endregion
 
         #region Constructors
 
+        /// <summary>
+        /// A default <see cref="Step"/> constructor.
+        /// </summary>
         public Step()
         {
-            MarkerClassBuilder = new ClassBuilder( BuildMarkerClasses );
-            DescriptionClassBuilder = new ClassBuilder( BuildDescriptionClasses );
+            MarkerClassBuilder = new( BuildMarkerClasses );
+            DescriptionClassBuilder = new( BuildDescriptionClasses );
         }
 
         #endregion
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void OnInitialized()
         {
-            if ( ParentSteps != null )
-            {
-                ParentSteps.NotifyStepInitialized( Name );
-            }
+            ParentSteps?.NotifyStepInitialized( Name );
 
             base.OnInitialized();
         }
 
+        /// <inheritdoc/>
         protected override void Dispose( bool disposing )
         {
             if ( disposing )
             {
-                if ( ParentStepsState != null )
-                {
-                    ParentSteps.NotifyStepRemoved( Name );
-                }
+                ParentSteps?.NotifyStepRemoved( Name );
             }
 
             base.Dispose( disposing );
         }
 
+        /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.StepItem() );
             builder.Append( ClassProvider.StepItemActive( Active ) );
             builder.Append( ClassProvider.StepItemCompleted( Completed ) );
-            builder.Append( ClassProvider.StepItemColor( Color ), Color != Color.None );
+            builder.Append( ClassProvider.StepItemColor( Color ), Color != Color.Default );
 
             base.BuildClasses( builder );
         }
 
+        /// <summary>
+        /// Builds the classnames for a marker element.
+        /// </summary>
+        /// <param name="builder">Class builder used to append the classnames.</param>
         protected virtual void BuildMarkerClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.StepItemMarker() );
         }
 
+        /// <summary>
+        /// Builds the classnames for a description element.
+        /// </summary>
+        /// <param name="builder">Class builder used to append the classnames.</param>
         protected virtual void BuildDescriptionClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.StepItemDescription() );
         }
 
+        /// <inheritdoc/>
         protected internal override void DirtyClasses()
         {
             MarkerClassBuilder.Dirty();
@@ -84,24 +95,40 @@ namespace Blazorise
             base.DirtyClasses();
         }
 
-        protected Task ClickHandler()
+        /// <summary>
+        /// Handles the step onclick event.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        protected async Task ClickHandler()
         {
-            Clicked?.Invoke();
-            ParentSteps?.SelectStep( Name );
+            await Clicked.InvokeAsync();
 
-            return Task.CompletedTask;
+            if ( ParentSteps != null )
+                await ParentSteps.SelectStep( Name );
         }
 
         #endregion
 
         #region Properties
 
+        /// <summary>
+        /// Marker element class builder.
+        /// </summary>
         protected ClassBuilder MarkerClassBuilder { get; private set; }
 
+        /// <summary>
+        /// Description element class builder.
+        /// </summary>
         protected ClassBuilder DescriptionClassBuilder { get; private set; }
 
+        /// <summary>
+        /// True if the step item is currently selected.
+        /// </summary>
         protected bool Active => parentStepsState?.SelectedStep == Name;
 
+        /// <summary>
+        /// Gets the index of a step item within the <see cref="Steps"/> component.
+        /// </summary>
         protected int? CalculatedIndex => Index ?? ParentSteps?.IndexOfStep( Name );
 
         /// <summary>
@@ -159,7 +186,7 @@ namespace Blazorise
         /// <summary>
         /// Occurs when the item is clicked.
         /// </summary>
-        [Parameter] public Action Clicked { get; set; }
+        [Parameter] public EventCallback Clicked { get; set; }
 
         /// <summary>
         /// Custom render template for the marker(circle) part of the step item.
@@ -171,8 +198,14 @@ namespace Blazorise
         /// </summary>
         [Parameter] public RenderFragment Caption { get; set; }
 
+        /// <summary>
+        /// Specifies the content to be rendered inside this <see cref="Step"/>.
+        /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
 
+        /// <summary>
+        /// Cascaded <see cref="Steps"/> component state object.
+        /// </summary>
         [CascadingParameter]
         protected StepsState ParentStepsState
         {
@@ -188,6 +221,9 @@ namespace Blazorise
             }
         }
 
+        /// <summary>
+        /// Gets or sets the reference to the parent <see cref="Steps"/> component.
+        /// </summary>
         [CascadingParameter] protected Steps ParentSteps { get; set; }
 
         #endregion

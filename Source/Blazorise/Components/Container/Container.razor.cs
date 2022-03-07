@@ -5,9 +5,14 @@ using Microsoft.AspNetCore.Components;
 
 namespace Blazorise
 {
+    /// <summary>
+    /// The container is a simple element that allows you to place content within a given device or viewport.
+    /// </summary>
     public partial class Container : BaseComponent
     {
         #region Members
+
+        private Breakpoint breakpoint;
 
         private bool fluid;
 
@@ -15,12 +20,13 @@ namespace Blazorise
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
             if ( Fluid )
                 builder.Append( ClassProvider.ContainerFluid() );
             else
-                builder.Append( ClassProvider.Container() );
+                builder.Append( ClassProvider.Container( Breakpoint ) );
 
             base.BuildClasses( builder );
         }
@@ -28,6 +34,21 @@ namespace Blazorise
         #endregion
 
         #region Properties
+
+        /// <summary>
+        /// Makes a full width container that is 100% wide until the specified breakpoint is reached.
+        /// </summary>
+        [Parameter]
+        public Breakpoint Breakpoint
+        {
+            get => breakpoint;
+            set
+            {
+                breakpoint = value;
+
+                DirtyClasses();
+            }
+        }
 
         /// <summary>
         /// Makes a full width container, spanning the entire width of the viewport.
@@ -44,6 +65,9 @@ namespace Blazorise
             }
         }
 
+        /// <summary>
+        /// Specifies the content to be rendered inside this <see cref="Container"/>.
+        /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
 
         #endregion

@@ -1,5 +1,4 @@
-﻿#region Using directives
-#endregion
+﻿using System;
 
 namespace Blazorise
 {
@@ -11,16 +10,16 @@ namespace Blazorise
         /// <summary>
         /// Don't float on all viewport sizes.
         /// </summary>
-        None,
+        Default,
 
         /// <summary>
-        /// Float left on all viewport sizes.
+        /// Float start on all viewport sizes.
         /// </summary>
-        Left,
+        Start,
 
         /// <summary>
-        /// Float right on all viewport sizes.
+        /// Float end on all viewport sizes.
         /// </summary>
-        Right,
+        End,
     }
 }

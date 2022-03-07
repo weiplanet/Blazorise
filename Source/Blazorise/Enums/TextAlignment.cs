@@ -1,5 +1,4 @@
-﻿#region Using directives
-#endregion
+﻿using System;
 
 namespace Blazorise
 {
@@ -11,22 +10,22 @@ namespace Blazorise
         /// <summary>
         /// No alignment will be applied.
         /// </summary>
-        None,
+        Default,
 
         /// <summary>
-        /// Aligns the text to the left.
+        /// Aligns the text to the start.
         /// </summary>
-        Left,
+        Start,
+
+        /// <summary>
+        /// Aligns the text to the end.
+        /// </summary>
+        End,
 
         /// <summary>
         /// Centers the text.
         /// </summary>
         Center,
-
-        /// <summary>
-        /// Aligns the text to the right.
-        /// </summary>
-        Right,
 
         /// <summary>
         /// Stretches the lines so that each line has equal width.

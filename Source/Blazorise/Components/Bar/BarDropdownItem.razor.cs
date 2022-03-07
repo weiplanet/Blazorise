@@ -1,4 +1,5 @@
 ﻿#region Using directives
+using System;
 using System.Threading.Tasks;
 using Blazorise.States;
 using Blazorise.Utilities;
@@ -7,6 +8,9 @@ using Microsoft.AspNetCore.Components;
 
 namespace Blazorise
 {
+    /// <summary>
+    /// A menu item for the <see cref="BarDropdownMenu"/> component.
+    /// </summary>
     public partial class BarDropdownItem : BaseComponent
     {
         #region Members
@@ -17,6 +21,7 @@ namespace Blazorise
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.BarDropdownItem( ParentDropdownState.Mode ) );
@@ -24,16 +29,26 @@ namespace Blazorise
             base.BuildClasses( builder );
         }
 
+        /// <inheritdoc/>
         protected override void BuildStyles( StyleBuilder builder )
         {
             base.BuildStyles( builder );
 
-            builder.Append( $"padding-left: { Indentation * ( ParentDropdownState.NestedIndex + 1 ) }rem", ParentDropdownState.IsInlineDisplay );
+            builder.Append( FormattableString.Invariant( $"padding-left: { Indentation * ( ParentDropdownState.NestedIndex + 1d ) }rem" ), ParentDropdownState.IsInlineDisplay );
         }
 
-        protected Task ClickHandler()
+        /// <summary>
+        /// Handles the item onclick event.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        protected async Task ClickHandler()
         {
-            return Clicked.InvokeAsync( null );
+            if ( ParentBarDropdown is not null && ParentDropdownState.Mode == BarMode.Horizontal )
+            {
+                if ( !ParentBarDropdown.WasJustToggled )
+                    await ParentBarDropdown.Hide( true );
+            }
+            await Clicked.InvokeAsync();
         }
 
         #endregion
@@ -53,7 +68,7 @@ namespace Blazorise
         /// <summary>
         /// The target attribute specifies where to open the linked document.
         /// </summary>
-        [Parameter] public Target Target { get; set; } = Target.None;
+        [Parameter] public Target Target { get; set; } = Target.Default;
 
         /// <summary>
         /// URL matching behavior for a link.
@@ -70,6 +85,14 @@ namespace Blazorise
         /// </summary>
         [Parameter] public double Indentation { get; set; } = 1.5d;
 
+        /// <summary>
+        /// Specifies the content to be rendered inside this <see cref="BarDropdownItem"/>.
+        /// </summary>
+        [Parameter] public RenderFragment ChildContent { get; set; }
+
+        /// <summary>
+        /// Cascaded parent <see cref="BarDropdown"/> state.
+        /// </summary>
         [CascadingParameter]
         protected BarDropdownState ParentDropdownState
         {
@@ -87,9 +110,9 @@ namespace Blazorise
         }
 
         /// <summary>
-        /// Specifies the content to be rendered inside this <see cref="BarDropdownItem"/>.
+        /// Gets or sets the reference to the parent BarDropdown.
         /// </summary>
-        [Parameter] public RenderFragment ChildContent { get; set; }
+        [CascadingParameter] protected BarDropdown ParentBarDropdown { get; set; }
 
         #endregion
     }

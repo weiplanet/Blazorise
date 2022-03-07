@@ -1,5 +1,4 @@
 ﻿#region Using directives
-using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Blazorise.Icons.Material;
@@ -18,25 +17,11 @@ namespace Blazorise.Demo.Material
             var builder = WebAssemblyHostBuilder.CreateDefault( args );
 
             builder.Services
-                .AddBlazorise( options =>
-                {
-                    options.ChangeTextOnKeyPress = true;
-                } )
-                .AddBlazoriseRichTextEdit( options =>
-                {
-                    options.UseBubbleTheme = true;
-                    options.UseShowTheme = true;
-                } )
+                .SetupDemoServices()
                 .AddMaterialProviders()
                 .AddMaterialIcons();
 
-            builder.Services.AddSingleton( new HttpClient
-            {
-                BaseAddress = new Uri( builder.HostEnvironment.BaseAddress )
-            } );
-
             builder.RootComponents.Add<App>( "#app" );
-
             var host = builder.Build();
 
             await host.RunAsync();

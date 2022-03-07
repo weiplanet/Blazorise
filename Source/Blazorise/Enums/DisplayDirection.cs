@@ -1,7 +1,4 @@
-﻿#region Using directives
-#endregion
-
-namespace Blazorise
+﻿namespace Blazorise
 {
     /// <summary>
     /// Defines direction of flex items in a flex container.
@@ -11,7 +8,7 @@ namespace Blazorise
         /// <summary>
         /// Direction will not be applied.
         /// </summary>
-        None,
+        Default,
 
         /// <summary>
         /// The flex container's main-axis is defined to be the same as the text direction. The main-start and main-end points are the same as the content direction.

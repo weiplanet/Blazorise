@@ -1,14 +1,11 @@
 ﻿#region Using directives
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Blazorise.Extensions;
+using Blazorise.Modules;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 #endregion
 
 namespace Blazorise
@@ -16,7 +13,7 @@ namespace Blazorise
     /// <summary>
     /// Component that allows you to display and edit single-line text.
     /// </summary>
-    public partial class TextEdit : BaseTextInput<string>
+    public partial class TextEdit : BaseTextInput<string>, IAsyncDisposable
     {
         #region Methods
 
@@ -28,47 +25,47 @@ namespace Blazorise
             if ( ParentValidation != null )
             {
                 if ( parameters.TryGetValue<Expression<Func<string>>>( nameof( TextExpression ), out var expression ) )
-                    ParentValidation.InitializeInputExpression( expression );
+                    await ParentValidation.InitializeInputExpression( expression );
 
                 if ( parameters.TryGetValue<string>( nameof( Pattern ), out var pattern ) )
                 {
                     // make sure we get the newest value
-                    var value = parameters.TryGetValue<string>( nameof( Text ), out var inText )
-                        ? inText
+                    var value = parameters.TryGetValue<string>( nameof( Text ), out var paramText )
+                        ? paramText
                         : InternalValue;
 
-                    ParentValidation.InitializeInputPattern( pattern, value );
+                    await ParentValidation.InitializeInputPattern( pattern, value );
                 }
 
-                InitializeValidation();
+                await InitializeValidation();
             }
         }
 
         /// <inheritdoc/>
         protected async override Task OnFirstAfterRenderAsync()
         {
-            await JSRunner.InitializeTextEdit( ElementRef, ElementId, MaskType.ToMaskTypeString(), EditMask );
+            await JSModule.Initialize( ElementRef, ElementId, MaskType.ToMaskTypeString(), EditMask );
 
             await base.OnFirstAfterRenderAsync();
         }
 
         /// <inheritdoc/>
-        protected override void Dispose( bool disposing )
+        protected override async ValueTask DisposeAsync( bool disposing )
         {
             if ( disposing && Rendered )
             {
-                JSRunner.DestroyTextEdit( ElementRef, ElementId );
+                await JSModule.SafeDestroy( ElementRef, ElementId );
             }
 
-            base.Dispose( disposing );
+            await base.DisposeAsync( disposing );
         }
 
         /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.TextEdit( Plaintext ) );
-            builder.Append( ClassProvider.TextEditColor( Color ), Color != Color.None );
-            builder.Append( ClassProvider.TextEditSize( Size ), Size != Size.None );
+            builder.Append( ClassProvider.TextEditColor( Color ), Color != Color.Default );
+            builder.Append( ClassProvider.TextEditSize( ThemeSize ), ThemeSize != Blazorise.Size.Default );
             builder.Append( ClassProvider.TextEditValidation( ParentValidation?.Status ?? ValidationStatus.None ), ParentValidation?.Status != ValidationStatus.None );
 
             base.BuildClasses( builder );
@@ -105,6 +102,11 @@ namespace Blazorise
 
         /// <inheritdoc/>
         protected override string DefaultValue => string.Empty;
+
+        /// <summary>
+        /// Gets or sets the <see cref="IJSTextEditModule"/> instance.
+        /// </summary>
+        [Inject] public IJSTextEditModule JSModule { get; set; }
 
         /// <summary>
         /// Defines the role of the input text.
@@ -147,9 +149,8 @@ namespace Blazorise
         [Parameter] public int? MaxLength { get; set; }
 
         /// <summary>
-        /// The size attribute specifies the visible width, in characters, of an <input> element.
+        /// The size attribute specifies the visible width, in characters, of an input element. https://www.w3schools.com/tags/att_input_size.asp".
         /// </summary>
-        /// <see cref="https://www.w3schools.com/tags/att_input_size.asp"/>
         [Parameter] public int? VisibleCharacters { get; set; }
 
         #endregion

@@ -1,4 +1,5 @@
 ﻿#region Using directives
+using System;
 using System.Threading.Tasks;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
@@ -7,7 +8,10 @@ using Microsoft.AspNetCore.Components.Routing;
 
 namespace Blazorise
 {
-    public partial class BreadcrumbItem : BaseComponent
+    /// <summary>
+    /// Wrapper for a breadcrumb link.
+    /// </summary>
+    public partial class BreadcrumbItem : BaseComponent, IDisposable
     {
         #region Members
 
@@ -19,6 +23,7 @@ namespace Blazorise
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.BreadcrumbItem() );
@@ -27,6 +32,7 @@ namespace Blazorise
             base.BuildClasses( builder );
         }
 
+        /// <inheritdoc/>
         protected override void OnInitialized()
         {
             NavigationManager.LocationChanged += OnLocationChanged;
@@ -34,6 +40,7 @@ namespace Blazorise
             base.OnInitialized();
         }
 
+        /// <inheritdoc/>
         protected override async Task OnAfterRenderAsync( bool firstRender )
         {
             if ( firstRender )
@@ -49,27 +56,36 @@ namespace Blazorise
             await base.OnAfterRenderAsync( firstRender );
         }
 
+        /// <inheritdoc/>
         protected override void Dispose( bool disposing )
         {
             if ( disposing )
             {
-                // To avoid leaking memory, it's important to detach any event handlers in Dispose()
                 NavigationManager.LocationChanged -= OnLocationChanged;
             }
 
             base.Dispose( disposing );
         }
 
-        private void OnLocationChanged( object sender, LocationChangedEventArgs args )
+        /// <summary>
+        /// Handles the navigation change event.
+        /// </summary>
+        /// <param name="sender">An object that raised the event.</param>
+        /// <param name="eventArgs">Location changed arguments.</param>
+        protected virtual void OnLocationChanged( object sender, LocationChangedEventArgs eventArgs )
         {
             if ( ParentBreadcrumb?.Mode == BreadcrumbMode.Auto )
             {
-                Active = args.Location == absoluteUri;
+                Active = eventArgs.Location == absoluteUri;
 
                 InvokeAsync( StateHasChanged );
             }
         }
 
+        /// <summary>
+        /// Notify us that the link relative address has changed.
+        /// </summary>
+        /// <param name="relativeUri"></param>
         internal void NotifyRelativeUriChanged( string relativeUri )
         {
             // uri will always be applied, no matter the BreadcrumbActivation state.
@@ -95,11 +111,20 @@ namespace Blazorise
             }
         }
 
+        /// <summary>
+        /// Gets or sets the navigation manager.
+        /// </summary>
         [Inject] private NavigationManager NavigationManager { get; set; }
 
-        [CascadingParameter] protected Breadcrumb ParentBreadcrumb { get; set; }
-
+        /// <summary>
+        /// Specifies the content to be rendered inside this <see cref="BreadcrumbItem"/>.
+        /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
+
+        /// <summary>
+        /// Gets or sets the reference to the parent <see cref="Breadcrumb"/> component.
+        /// </summary>
+        [CascadingParameter] protected Breadcrumb ParentBreadcrumb { get; set; }
 
         #endregion
     }

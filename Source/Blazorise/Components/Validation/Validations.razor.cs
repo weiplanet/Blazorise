@@ -1,7 +1,6 @@
 ﻿#region Using directives
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
@@ -18,11 +17,6 @@ namespace Blazorise
         #region Members
 
         /// <summary>
-        /// Raises an intent to validate all validations inside of this container.
-        /// </summary>
-        public event ValidatingAllEventHandler ValidatingAll;
-
-        /// <summary>
         /// Raises an intent that validations are going to be cleared.
         /// </summary>
         public event ClearAllValidationsEventHandler ClearingAll;
@@ -35,7 +29,7 @@ namespace Blazorise
         /// <summary>
         /// List of validations placed inside of this container.
         /// </summary>
-        private List<IValidation> validations = new List<IValidation>();
+        private readonly List<IValidation> validations = new();
 
         private EditContext editContext;
 
@@ -45,6 +39,7 @@ namespace Blazorise
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void OnParametersSet()
         {
             if ( hasSetEditContextExplicitly && Model != null )
@@ -56,22 +51,22 @@ namespace Blazorise
             // potentially new EditContext, or if they are supplying a different Model
             if ( Model != null && Model != editContext?.Model )
             {
-                editContext = new EditContext( Model );
+                editContext = new( Model );
             }
         }
 
         /// <summary>
-        /// Runs the validation process for all validations and returns false if any is failed.
+        /// Asynchronously runs the validation process for all validations and returns false if any is failed.
         /// </summary>
-        public bool ValidateAll()
+        public async Task<bool> ValidateAll()
         {
-            var result = TryValidateAll();
+            var result = await TryValidateAll();
 
             if ( result )
             {
                 RaiseStatusChanged( ValidationStatus.Success, null );
 
-                ValidatedAll.InvokeAsync( null );
+                await InvokeAsync( () => ValidatedAll.InvokeAsync() );
             }
             else if ( HasFailedValidations )
             {
@@ -84,32 +79,23 @@ namespace Blazorise
         /// <summary>
         /// Clears all validation statuses.
         /// </summary>
-        public void ClearAll()
+        public Task ClearAll()
         {
             ClearingAll?.Invoke();
 
             RaiseStatusChanged( ValidationStatus.None, null );
+
+            return Task.CompletedTask;
         }
 
-        private bool TryValidateAll()
+        private async Task<bool> TryValidateAll()
         {
             var validated = true;
 
-            var handler = ValidatingAll;
-
-            if ( handler != null )
+            foreach ( var validation in validations ?? Enumerable.Empty<IValidation>() )
             {
-                var args = new ValidatingAllEventArgs( false );
-
-                foreach ( ValidatingAllEventHandler subHandler in handler?.GetInvocationList() )
-                {
-                    subHandler( args );
-
-                    if ( args.Cancel )
-                    {
-                        validated = false;
-                    }
-                }
+                if ( await validation.ValidateAsync() == ValidationStatus.Error )
+                    validated = false;
             }
 
             return validated;
@@ -133,7 +119,7 @@ namespace Blazorise
 
         internal void NotifyValidationStatusChanged( IValidation validation )
         {
-            // Here we need to call ValidatedAll only when in Auto mode. Manuall call is already called through ValidateAll()
+            // Here we need to call ValidatedAll only when in Auto mode. Manual call is already called through ValidateAll()
             if ( Mode == ValidationMode.Manual )
                 return;
 
@@ -145,7 +131,7 @@ namespace Blazorise
             {
                 RaiseStatusChanged( ValidationStatus.Success, null );
 
-                ValidatedAll.InvokeAsync( null );
+                ValidatedAll.InvokeAsync();
             }
             else if ( HasFailedValidations )
             {
@@ -159,9 +145,9 @@ namespace Blazorise
 
         private void RaiseStatusChanged( ValidationStatus status, IReadOnlyCollection<string> messages )
         {
-            _StatusChanged?.Invoke( new ValidationsStatusChangedEventArgs( status, messages ) );
+            _StatusChanged?.Invoke( new( status, messages ) );
 
-            StatusChanged.InvokeAsync( new ValidationsStatusChangedEventArgs( status, messages ) );
+            InvokeAsync( () => StatusChanged.InvokeAsync( new( status, messages ) ) );
         }
 
         #endregion
@@ -255,7 +241,7 @@ namespace Blazorise
                             && ( v.Messages == null || v.Messages.Count() == 0 )
                             && !validations.Where( v2 => v2.Status == ValidationStatus.Error && v2.Messages?.Count() > 0 ).Contains( v ) )
                         ? new string[] { MissingFieldsErrorMessage ?? "One or more fields have an error. Please check and try again." }
-                        : new string[] { } )
+                        : Array.Empty<string>() )
                     .ToList();
             }
         }

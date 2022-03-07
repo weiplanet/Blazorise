@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Blazorise.Base;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -10,7 +9,10 @@ using Microsoft.JSInterop;
 
 namespace Blazorise
 {
-    public abstract class BaseComponent : BaseAfterRenderComponent, IDisposable
+    /// <summary>
+    /// Base class for all DOM based components.
+    /// </summary>
+    public abstract class BaseComponent : BaseAfterRenderComponent
     {
         #region Members
 
@@ -18,7 +20,15 @@ namespace Blazorise
 
         private string customStyle;
 
-        private Float @float = Float.None;
+        private Float @float = Float.Default;
+
+        private bool clearfix;
+
+        private Visibility visibility = Visibility.Default;
+
+        private IFluentSizing width;
+
+        private IFluentSizing height;
 
         private IFluentSpacing margin;
 
@@ -26,22 +36,85 @@ namespace Blazorise
 
         private IFluentDisplay display;
 
+        private IFluentBorder border;
+
+        private IFluentFlex flex;
+
+        private IFluentPosition position;
+
+        private IFluentOverflow overflow;
+
         private CharacterCasing characterCasing = CharacterCasing.Normal;
+
+        private TextColor textColor = TextColor.Default;
+
+        private TextAlignment textAlignment = TextAlignment.Default;
+
+        private TextTransform textTransform = TextTransform.Default;
+
+        private TextWeight textWeight = TextWeight.Default;
+
+        private TextOverflow textOverflow = TextOverflow.Default;
+
+        private VerticalAlignment verticalAlignment = VerticalAlignment.Default;
+
+        private Background background = Background.Default;
+
+        private Shadow shadow = Shadow.None;
 
         #endregion
 
         #region Constructors
 
+        /// <summary>
+        /// Default constructor for <see cref="BaseComponent"/>.
+        /// </summary>
         public BaseComponent()
         {
-            ClassBuilder = new ClassBuilder( BuildClasses );
-            StyleBuilder = new StyleBuilder( BuildStyles );
+            ClassBuilder = new( BuildClasses );
+            StyleBuilder = new( BuildStyles );
         }
 
         #endregion
 
         #region Methods
 
+        /// <inheritdoc/>
+        public override Task SetParametersAsync( ParameterView parameters )
+        {
+            object heightAttribute = null;
+
+            // WORKAROUND for: https://github.com/dotnet/aspnetcore/issues/32252
+            // HTML native width/height attributes are recognized as Width/Height parameters
+            // and Blazor tries to convert them resulting in error. This workaround tries to fix it by removing
+            // width/height from parameter list and moving them to Attributes(as unmatched values).
+            //
+            // This behavior is really an edge-case and shouldn't affect performance too much.
+            // Only in some rare cases when width/height are used will the parameters be rebuilt.
+            if ( parameters.TryGetValue( "width", out object widthAttribute )
+                || parameters.TryGetValue( "height", out heightAttribute ) )
+            {
+                var parametersDictionary = (Dictionary<string, object>)parameters.ToDictionary();
+
+                Attributes ??= new();
+
+                if ( widthAttribute != null && parametersDictionary.Remove( "width" ) )
+                {
+                    Attributes.Add( "width", widthAttribute );
+                }
+
+                if ( heightAttribute != null && parametersDictionary.Remove( "height" ) )
+                {
+                    Attributes.Add( "height", heightAttribute );
+                }
+
+                return base.SetParametersAsync( ParameterView.FromDictionary( parametersDictionary ) );
+            }
+
+            return base.SetParametersAsync( parameters );
+        }
+
+        /// <inheritdoc/>
         protected override void OnInitialized()
         {
             if ( ShouldAutoGenerateId && ElementId == null )
@@ -52,6 +125,7 @@ namespace Blazorise
             base.OnInitialized();
         }
 
+        /// <inheritdoc/>
         protected override async Task OnAfterRenderAsync( bool firstRender )
         {
             if ( firstRender )
@@ -68,6 +142,30 @@ namespace Blazorise
         /// <returns>A task that represents the asynchronous operation.</returns>
         protected virtual Task OnFirstAfterRenderAsync()
             => Task.CompletedTask;
+
+        /// <inheritdoc/>
+        protected override void Dispose( bool disposing )
+        {
+            if ( disposing )
+            { 
+                ClassBuilder = null;
+                StyleBuilder = null;
+            }
+
+            base.Dispose( disposing );
+        }
+
+        /// <inheritdoc/>
+        protected override ValueTask DisposeAsync( bool disposing )
+        {
+            if ( disposing )
+            {
+                ClassBuilder = null;
+                StyleBuilder = null;
+            }
+
+            return base.DisposeAsync( disposing );
+        }
 
         /// <summary>
         /// Builds a list of classnames for this component.
@@ -87,11 +185,59 @@ namespace Blazorise
             if ( Display != null )
                 builder.Append( Display.Class( ClassProvider ) );
 
-            if ( Float != Float.None )
-                builder.Append( ClassProvider.ToFloat( Float ) );
+            if ( Border != null )
+                builder.Append( Border.Class( ClassProvider ) );
+
+            if ( Flex != null )
+                builder.Append( Flex.Class( ClassProvider ) );
+
+            if ( Position != null )
+                builder.Append( Position.Class( ClassProvider ) );
+
+            if ( Overflow != null )
+                builder.Append( Overflow.Class( ClassProvider ) );
+
+            if ( Float != Float.Default )
+                builder.Append( ClassProvider.Float( Float ) );
+
+            if ( Clearfix )
+                builder.Append( ClassProvider.Clearfix() );
+
+            if ( Visibility != Visibility.Default )
+                builder.Append( ClassProvider.Visibility( Visibility ) );
+
+            if ( VerticalAlignment != VerticalAlignment.Default )
+                builder.Append( ClassProvider.VerticalAlignment( VerticalAlignment ) );
+
+            if ( Width != null )
+                builder.Append( Width.Class( ClassProvider ) );
+
+            if ( Height != null )
+                builder.Append( Height.Class( ClassProvider ) );
 
             if ( Casing != CharacterCasing.Normal )
                 builder.Append( ClassProvider.Casing( Casing ) );
+
+            if ( TextColor != TextColor.Default )
+                builder.Append( ClassProvider.TextColor( TextColor ) );
+
+            if ( TextAlignment != TextAlignment.Default )
+                builder.Append( ClassProvider.TextAlignment( TextAlignment ) );
+
+            if ( TextTransform != TextTransform.Default )
+                builder.Append( ClassProvider.TextTransform( TextTransform ) );
+
+            if ( TextWeight != TextWeight.Default )
+                builder.Append( ClassProvider.TextWeight( TextWeight ) );
+
+            if ( TextOverflow != TextOverflow.Default )
+                builder.Append( ClassProvider.TextOverflow( TextOverflow ) );
+
+            if ( Background != Background.Default )
+                builder.Append( ClassProvider.BackgroundColor( Background ) );
+
+            if ( Shadow != Shadow.None )
+                builder.Append( ClassProvider.Shadow( Shadow ) );
         }
 
         /// <summary>
@@ -109,7 +255,7 @@ namespace Blazorise
         /// </summary>
         internal protected virtual void DirtyClasses()
         {
-            ClassBuilder.Dirty();
+            ClassBuilder?.Dirty();
         }
 
         /// <summary>
@@ -117,14 +263,25 @@ namespace Blazorise
         /// </summary>
         protected virtual void DirtyStyles()
         {
-            StyleBuilder.Dirty();
+            StyleBuilder?.Dirty();
         }
 
+        /// <summary>
+        /// Creates a new instance of <see cref="DotNetObjectReference{T}"/>.
+        /// </summary>
+        /// <typeparam name="T">Type of the object.</typeparam>
+        /// <param name="value">The reference of the tracked object.</param>
+        /// <returns>An instance of <see cref="DotNetObjectReference{T}"/>.</returns>
         protected DotNetObjectReference<T> CreateDotNetObjectRef<T>( T value ) where T : class
         {
             return DotNetObjectReference.Create( value );
         }
 
+        /// <summary>
+        /// Destroys the instance of <see cref="DotNetObjectReference{T}"/>.
+        /// </summary>
+        /// <typeparam name="T">Type of the object.</typeparam>
+        /// <param name="value">The reference of the tracked object.</param>
         protected void DisposeDotNetObjectRef<T>( DotNetObjectReference<T> value ) where T : class
         {
             value?.Dispose();
@@ -180,11 +337,6 @@ namespace Blazorise
         /// Gets or set the javascript runner.
         /// </summary>
         [Inject] protected IIdGenerator IdGenerator { get; set; }
-
-        /// <summary>
-        /// Gets or set the javascript runner.
-        /// </summary>
-        [Inject] protected IJSRunner JSRunner { get; set; }
 
         /// <summary>
         /// Gets or sets the classname provider.
@@ -244,6 +396,66 @@ namespace Blazorise
         }
 
         /// <summary>
+        /// Fixes an element's floating children.
+        /// </summary>
+        [Parameter]
+        public bool Clearfix
+        {
+            get => clearfix;
+            set
+            {
+                clearfix = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Controls the visibility, without modifying the display, of elements with visibility utilities.
+        /// </summary>
+        [Parameter]
+        public Visibility Visibility
+        {
+            get => visibility;
+            set
+            {
+                visibility = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Defined the sizing for the element width attribute(s).
+        /// </summary>
+        [Parameter]
+        public IFluentSizing Width
+        {
+            get => width;
+            set
+            {
+                width = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Defined the sizing for the element height attribute(s).
+        /// </summary>
+        [Parameter]
+        public IFluentSizing Height
+        {
+            get => height;
+            set
+            {
+                height = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
         /// Defines the element margin spacing.
         /// </summary>
         [Parameter]
@@ -289,6 +501,66 @@ namespace Blazorise
         }
 
         /// <summary>
+        /// Specifies the border of an element.
+        /// </summary>
+        [Parameter]
+        public IFluentBorder Border
+        {
+            get => border;
+            set
+            {
+                border = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Specifies flexbox properties of an element.
+        /// </summary>
+        [Parameter]
+        public IFluentFlex Flex
+        {
+            get => flex;
+            set
+            {
+                flex = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// The position property specifies the type of positioning method used for an element (static, relative, fixed, absolute or sticky).
+        /// </summary>
+        [Parameter]
+        public IFluentPosition Position
+        {
+            get => position;
+            set
+            {
+                position = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// The overflow property controls what happens to content that is too big to fit into an area.
+        /// </summary>
+        [Parameter]
+        public IFluentOverflow Overflow
+        {
+            get => overflow;
+            set
+            {
+                overflow = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
         /// Changes the character casing of a element.
         /// </summary>
         [Parameter]
@@ -298,6 +570,126 @@ namespace Blazorise
             set
             {
                 characterCasing = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the text color.
+        /// </summary>
+        [Parameter]
+        public TextColor TextColor
+        {
+            get => textColor;
+            set
+            {
+                textColor = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the text alignment.
+        /// </summary>
+        [Parameter]
+        public TextAlignment TextAlignment
+        {
+            get => textAlignment;
+            set
+            {
+                textAlignment = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the text transformation.
+        /// </summary>
+        [Parameter]
+        public TextTransform TextTransform
+        {
+            get => textTransform;
+            set
+            {
+                textTransform = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the text weight.
+        /// </summary>
+        [Parameter]
+        public TextWeight TextWeight
+        {
+            get => textWeight;
+            set
+            {
+                textWeight = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Determines how the text will behave when it is larger than a parent container.
+        /// </summary>
+        [Parameter]
+        public TextOverflow TextOverflow
+        {
+            get => textOverflow;
+            set
+            {
+                textOverflow = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Changes the vertical alignment of inline, inline-block, inline-table, and table cell elements.
+        /// </summary>
+        [Parameter]
+        public VerticalAlignment VerticalAlignment
+        {
+            get => verticalAlignment;
+            set
+            {
+                verticalAlignment = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the component background color.
+        /// </summary>
+        [Parameter]
+        public Background Background
+        {
+            get => background;
+            set
+            {
+                background = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the component shadow box.
+        /// </summary>
+        [Parameter]
+        public Shadow Shadow
+        {
+            get => shadow;
+            set
+            {
+                shadow = value;
 
                 DirtyClasses();
             }

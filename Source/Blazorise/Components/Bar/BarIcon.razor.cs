@@ -10,10 +10,6 @@ namespace Blazorise
     /// </summary>
     public partial class BarIcon : BaseComponent
     {
-        #region Members
-
-        #endregion
-
         #region Methods
 
         /// <inheritdoc/>
@@ -37,6 +33,11 @@ namespace Blazorise
         /// Suggested icon style.
         /// </summary>
         [Parameter] public IconStyle IconStyle { get; set; }
+
+        /// <summary>
+        /// Defines the icon size.
+        /// </summary>
+        [Parameter] public IconSize IconSize { get; set; }
 
         #endregion
     }

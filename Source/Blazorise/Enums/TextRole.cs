@@ -1,7 +1,4 @@
-﻿#region Using directives
-#endregion
-
-namespace Blazorise
+﻿namespace Blazorise
 {
     /// <summary>
     /// Defines the behaviour of the text input.
@@ -32,5 +29,10 @@ namespace Blazorise
         /// Define a search field (like a site search, or Google search).
         /// </summary>
         Search,
+
+        /// <summary>
+        /// Define a field for entering a telephone number.
+        /// </summary>
+        Telephone,
     }
 }

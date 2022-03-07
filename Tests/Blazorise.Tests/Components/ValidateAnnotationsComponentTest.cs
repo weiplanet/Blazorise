@@ -1,10 +1,7 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-using AngleSharp.Dom;
+﻿using AngleSharp.Dom;
 using BasicTestApp.Client;
 using Blazorise.Tests.Helpers;
 using Bunit;
-using Microsoft.AspNetCore.Components;
 using Xunit;
 
 
@@ -19,6 +16,8 @@ namespace Blazorise.Tests.Components
         public ValidateAnnotationsComponentTest()
         {
             BlazoriseConfig.AddBootstrapProviders( Services );
+            BlazoriseConfig.JSInterop.AddButton( this.JSInterop );
+            BlazoriseConfig.JSInterop.AddTextEdit( this.JSInterop );
         }
 
         [Fact]

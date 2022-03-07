@@ -1,5 +1,7 @@
 ﻿#region Using directives
+using System;
 using System.Threading.Tasks;
+using Blazorise.Modules;
 using Blazorise.States;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
@@ -12,14 +14,14 @@ namespace Blazorise
     /// <summary>
     /// The <see cref="Bar"/> component is a wrapper that positions branding, navigation, and other elements into a concise header or sidebar.
     /// </summary>
-    public partial class Bar : BaseComponent, IBreakpointActivator
+    public partial class Bar : BaseComponent, IBreakpointActivator, IAsyncDisposable
     {
         #region Members
 
         /// <summary>
         /// Used to keep track of the breakpoint state for this component.
         /// </summary>
-        private bool isBroken;
+        private bool isBroken = true;
 
         /// <summary>
         /// Reference to the object that should be accessed through JSInterop.
@@ -29,7 +31,7 @@ namespace Blazorise
         /// <summary>
         /// Holds the state for this bar component.
         /// </summary>
-        private BarState state = new BarState
+        private BarState state = new()
         {
             Visible = true,
             Mode = BarMode.Horizontal,
@@ -37,21 +39,25 @@ namespace Blazorise
             Breakpoint = Breakpoint.None,
             NavigationBreakpoint = Breakpoint.None,
             ThemeContrast = ThemeContrast.Light,
-            Alignment = Alignment.None,
-            Background = Background.None,
+            Alignment = Alignment.Default,
         };
+
+        /// <summary>
+        /// Used to tell us that bar is initializing.
+        /// </summary>
+        private bool initial = true;
 
         #endregion
 
         #region Methods
 
         /// <inheritdoc/>
-        protected override async Task OnInitializedAsync()
+        protected override Task OnInitializedAsync()
         {
             if ( NavigationBreakpoint != Breakpoint.None )
                 NavigationManager.LocationChanged += OnLocationChanged;
 
-            await base.OnInitializedAsync();
+            return base.OnInitializedAsync();
         }
 
         /// <inheritdoc/>
@@ -59,18 +65,27 @@ namespace Blazorise
         {
             dotNetObjectRef ??= CreateDotNetObjectRef( new BreakpointActivatorAdapter( this ) );
 
-            _ = JSRunner.RegisterBreakpointComponent( dotNetObjectRef, ElementId );
+            await JSBreakpointModule.RegisterBreakpoint( dotNetObjectRef, ElementId );
 
             if ( Mode != BarMode.Horizontal )
             {
                 // Check if we need to collapse the Bar based on the current screen width against the breakpoint defined for this component.
-                // This needs to be run to set the inital state, RegisterBreakpointComponent and OnBreakpoint will handle
+                // This needs to be run to set the initial state, RegisterBreakpointComponent and OnBreakpoint will handle
                 // additional changes to responsive breakpoints from there.
-                isBroken = BreakpointActivatorAdapter.IsBroken( Breakpoint, await JSRunner.GetBreakpoint() );
+                isBroken = BreakpointActivatorAdapter.IsBroken( Breakpoint, await JSBreakpointModule.GetBreakpoint() );
 
                 if ( isBroken )
                 {
+                    initial = false;
+
                     await Toggle();
+                }
+                else if ( initial )
+                {
+                    initial = false;
+
+                    DirtyClasses();
+                    await InvokeAsync( StateHasChanged );
                 }
             }
 
@@ -81,10 +96,10 @@ namespace Blazorise
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.Bar() );
-            builder.Append( ClassProvider.BarBackground( Background ), Background != Background.None );
+            builder.Append( ClassProvider.BarInitial( initial && Mode != BarMode.Horizontal ) );
             builder.Append( ClassProvider.BarThemeContrast( ThemeContrast ), ThemeContrast != ThemeContrast.None );
             builder.Append( ClassProvider.BarBreakpoint( Breakpoint ), Breakpoint != Breakpoint.None );
-            builder.Append( ClassProvider.FlexAlignment( Alignment ), Alignment != Alignment.None );
+            builder.Append( ClassProvider.FlexAlignment( Alignment ), Alignment != Alignment.Default );
             builder.Append( ClassProvider.BarMode( Mode ) );
 
             base.BuildClasses( builder );
@@ -100,6 +115,7 @@ namespace Blazorise
             return InvokeAsync( StateHasChanged );
         }
 
+        /// <inheritdoc/>
         public Task OnBreakpoint( bool broken )
         {
             // If the breakpoint state has changed, we need to toggle the visibility of this component.
@@ -115,23 +131,35 @@ namespace Blazorise
         }
 
         /// <inheritdoc/>
-        protected override void Dispose( bool disposing )
+        protected override async ValueTask DisposeAsync( bool disposing )
         {
             if ( disposing )
             {
                 // make sure to unregister listener
                 if ( Rendered )
                 {
-                    _ = JSRunner.UnregisterBreakpointComponent( this );
+                    var task = JSBreakpointModule.UnregisterBreakpoint( this );
+
+                    try
+                    {
+                        await task;
+                    }
+                    catch when ( task.IsCanceled )
+                    {
+                    }
+                    catch ( Microsoft.JSInterop.JSDisconnectedException )
+                    {
+                    }
 
                     DisposeDotNetObjectRef( dotNetObjectRef );
+                    dotNetObjectRef = null;
                 }
 
                 if ( NavigationBreakpoint != Breakpoint.None )
                     NavigationManager.LocationChanged -= OnLocationChanged;
             }
 
-            base.Dispose( disposing );
+            await base.DisposeAsync( disposing );
         }
 
         /// <summary>
@@ -142,7 +170,7 @@ namespace Blazorise
         private async void OnLocationChanged( object sender, LocationChangedEventArgs args )
         {
             // Collapse the bar automatically
-            if ( Visible && BreakpointActivatorAdapter.IsBroken( NavigationBreakpoint, await JSRunner.GetBreakpoint() ) )
+            if ( Visible && BreakpointActivatorAdapter.IsBroken( NavigationBreakpoint, await JSBreakpointModule.GetBreakpoint() ) )
                 await Toggle();
         }
 
@@ -178,12 +206,17 @@ namespace Blazorise
         }
 
         /// <summary>
+        /// Gets or sets the <see cref="IJSBreakpointModule"/> instance.
+        /// </summary>
+        [Inject] public IJSBreakpointModule JSBreakpointModule { get; set; }
+
+        /// <summary>
         /// Injects the navigation manager.
         /// </summary>
         [Inject] protected NavigationManager NavigationManager { get; set; }
 
         /// <summary>
-        /// Controlls the state of toggler and the menu.
+        /// Controls the state of toggler and the menu.
         /// </summary>
         [Parameter]
         public virtual bool Visible
@@ -197,9 +230,9 @@ namespace Blazorise
 
                 state = state with { Visible = value };
 
-                VisibleChanged.InvokeAsync( value );
-
                 DirtyClasses();
+
+                VisibleChanged.InvokeAsync( value );
             }
         }
 
@@ -240,7 +273,7 @@ namespace Blazorise
         }
 
         /// <summary>
-        /// Defines the prefered theme contrast for this <see cref="Bar"/> component.
+        /// Defines the preferred theme contrast for this <see cref="Bar"/> component.
         /// </summary>
         [Parameter]
         public ThemeContrast ThemeContrast
@@ -264,21 +297,6 @@ namespace Blazorise
             set
             {
                 state = state with { Alignment = value };
-
-                DirtyClasses();
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the bar background color.
-        /// </summary>
-        [Parameter]
-        public Background Background
-        {
-            get => state.Background;
-            set
-            {
-                state = state with { Background = value };
 
                 DirtyClasses();
             }
@@ -324,6 +342,16 @@ namespace Blazorise
         /// Specifies the content to be rendered inside this <see cref="Bar"/>.
         /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
+
+        /// <summary>
+        /// Cascaded theme settings.
+        /// </summary>
+        [CascadingParameter] public Theme Theme { get; set; }
+
+        /// <summary>
+        /// Cascaded layour header component.
+        /// </summary>
+        [CascadingParameter] protected LayoutHeader LayoutHeader { get; set; }
 
         #endregion
     }

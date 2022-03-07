@@ -1,14 +1,18 @@
 ﻿#region Using directives
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Blazorise.DataGrid.Utils;
+using Blazorise.Extensions;
 using Microsoft.AspNetCore.Components;
 #endregion
 
 namespace Blazorise.DataGrid
 {
-    public partial class DataGridColumn<TItem> : BaseDataGridColumn<TItem>, IDisposable
+    public partial class DataGridColumn<TItem> : BaseDataGridColumn<TItem>
     {
         #region Members
 
@@ -16,8 +20,9 @@ namespace Blazorise.DataGrid
         private readonly Lazy<Func<object>> defaultValueByType;
         private readonly Lazy<Func<TItem, object>> valueGetter;
         private readonly Lazy<Action<TItem, object>> valueSetter;
+        private readonly Lazy<Func<TItem, object>> sortFieldGetter;
 
-        private Dictionary<DataGridSortMode, SortDirection> currentDirection { get; set; } = new Dictionary<DataGridSortMode, SortDirection>();
+        private Dictionary<DataGridSortMode, SortDirection> currentSortDirection { get; set; } = new();
 
         #endregion
 
@@ -26,10 +31,11 @@ namespace Blazorise.DataGrid
         public DataGridColumn()
         {
             // TODO: move this to cached FunctionCompiler so it doesn't get compiled every time
-            valueTypeGetter = new Lazy<Func<Type>>( () => FunctionCompiler.CreateValueTypeGetter<TItem>( Field ) );
-            defaultValueByType = new Lazy<Func<object>>( () => FunctionCompiler.CreateDefaultValueByType<TItem>( Field ) );
-            valueGetter = new Lazy<Func<TItem, object>>( () => FunctionCompiler.CreateValueGetter<TItem>( Field ) );
-            valueSetter = new Lazy<Action<TItem, object>>( () => FunctionCompiler.CreateValueSetter<TItem>( Field ) );
+            valueTypeGetter = new( () => FunctionCompiler.CreateValueTypeGetter<TItem>( Field ) );
+            defaultValueByType = new( () => FunctionCompiler.CreateDefaultValueByType<TItem>( Field ) );
+            valueGetter = new( () => FunctionCompiler.CreateValueGetter<TItem>( Field ) );
+            valueSetter = new( () => FunctionCompiler.CreateValueSetter<TItem>( Field ) );
+            sortFieldGetter = new( () => FunctionCompiler.CreateValueGetter<TItem>( SortField ) );
         }
 
         #endregion
@@ -38,40 +44,43 @@ namespace Blazorise.DataGrid
 
         protected override void OnInitialized()
         {
+            base.OnInitialized();
+
+            currentSortDirection[DataGridSortMode.Single] = SortDirection;
+            currentSortDirection[DataGridSortMode.Multiple] = SortDirection;
+
             if ( ParentDataGrid != null )
             {
-                // connect column to the parent datagrid
-                ParentDataGrid.Hook( this );
+                ParentDataGrid.AddColumn( this );
 
-                if ( Filter != null )
-                {
-                    Filter.Subscribe( OnSearchValueChanged );
-                }
+                Filter?.Subscribe( OnSearchValueChanged );
             }
-
-            // initialize temporary variables
-            currentDirection[DataGridSortMode.Single] = Direction;
-            currentDirection[DataGridSortMode.Multiple] = Direction;
-
-            base.OnInitialized();
         }
 
-        protected override void Dispose( bool disposing )
+        /// <inheritdoc/>
+        protected override ValueTask DisposeAsync( bool disposing )
         {
             if ( disposing )
             {
-                if ( Filter != null )
-                {
-                    Filter.Unsubscribe( OnSearchValueChanged );
-
-                    Filter = null;
-                }
+                DisposeSubscriptions();
             }
 
-            base.Dispose( disposing );
+            return base.DisposeAsync( disposing );
         }
 
-        public async void OnSearchValueChanged( string filterValue )
+        private void DisposeSubscriptions()
+        {
+            ParentDataGrid.RemoveColumn( this );
+
+            if ( Filter is not null )
+            {
+                Filter.Unsubscribe( OnSearchValueChanged );
+
+                Filter = null;
+            }
+        }
+
+        public async void OnSearchValueChanged( object filterValue )
         {
             await ParentDataGrid.OnFilterChanged( this, filterValue );
         }
@@ -81,7 +90,9 @@ namespace Blazorise.DataGrid
         /// </summary>
         /// <returns></returns>
         internal Type GetValueType()
-            => valueTypeGetter.Value();
+            => !string.IsNullOrEmpty( Field )
+                ? valueTypeGetter.Value()
+                : default;
 
         /// <summary>
         /// Gets default value based on the typeof() of the value associated with this column field.
@@ -93,18 +104,55 @@ namespace Blazorise.DataGrid
         /// <summary>
         /// Gets the current value for the field in the supplied model.
         /// </summary>
-        /// <param name="item">Item for which ro set the value.</param>
+        /// <param name="item">Item for which to get the value.</param>
         /// <returns></returns>
         internal object GetValue( TItem item )
-            => valueGetter.Value( item );
+            => !string.IsNullOrEmpty( Field )
+                ? valueGetter.Value( item )
+                : default;
 
         /// <summary>
         /// Sets the value for the field in the supplied model.
         /// </summary>
-        /// <param name="item">Item for which ro set the value.</param>
+        /// <param name="item">Item for which to set the value.</param>
         /// <param name="value">Value to set.</param>
         internal void SetValue( TItem item, object value )
-            => valueSetter.Value( item, value );
+        {
+            if ( !string.IsNullOrEmpty( Field ) )
+                valueSetter.Value( item, value );
+        }
+
+        /// <summary>
+        /// Gets the current value for the sort field in the supplied model.
+        /// </summary>
+        /// <param name="item">Item for which to get the value.</param>
+        /// <returns></returns>
+        internal object GetSortValue( TItem item )
+            => sortFieldGetter.Value( item );
+
+        /// <summary>
+        /// Gets the current value to be used for sorting.
+        /// </summary>
+        /// <param name="item">Item for which to get the value.</param>
+        /// <returns></returns>
+        internal object GetValueForSort( TItem item )
+            => string.IsNullOrWhiteSpace( SortField )
+                ? GetValue( item )
+                : GetSortValue( item );
+
+        /// <summary>
+        /// Gets wether the column is able to sort.
+        /// </summary>
+        /// <returns></returns>
+        internal bool CanSort()
+            => Sortable && ( !string.IsNullOrEmpty( GetFieldToSort() ) );
+
+        /// <summary>
+        /// Gets the field to be used for Sorting.
+        /// </summary>
+        /// <returns></returns>
+        internal string GetFieldToSort()
+            => string.IsNullOrEmpty( SortField ) ? Field : SortField;
 
         public string FormatDisplayValue( TItem item )
         {
@@ -196,13 +244,13 @@ namespace Blazorise.DataGrid
         /// Gets or sets the current sort direction.
         /// </summary>
         /// <remarks>
-        /// The reason for this field is that <see cref="Direction"/> is reseted every
+        /// The reason for this field is that <see cref="SortDirection"/> is reset every
         /// time when the grid is refreshed by the user.
         /// </remarks>
-        internal SortDirection CurrentDirection
+        public SortDirection CurrentSortDirection
         {
-            get => currentDirection[ParentDataGrid.SortMode];
-            set => currentDirection[ParentDataGrid.SortMode] = value;
+            get => currentSortDirection[ParentDataGrid.SortMode];
+            internal set => currentSortDirection[ParentDataGrid.SortMode] = value;
         }
 
         /// <summary>
@@ -227,13 +275,17 @@ namespace Blazorise.DataGrid
         /// <summary>
         /// Filter value for this column.
         /// </summary>
-        [Parameter] public FilterContext Filter { get; set; } = new FilterContext();
+        [Parameter] public FilterContext<TItem> Filter { get; set; } = new();
+
+        /// <summary>
+        /// Custom filter function used to override internal filtering.
+        /// </summary>
+        [Parameter] public DataGridColumnCustomFilter CustomFilter { get; set; }
 
         /// <summary>
         /// Gets or sets the column initial sort direction.
         /// </summary>
-        /// </remarks>
-        [Parameter] public SortDirection Direction { get; set; }
+        [Parameter] public SortDirection SortDirection { get; set; }
 
         /// <summary>
         /// Gets or sets the column's display sort direction template.
@@ -246,9 +298,29 @@ namespace Blazorise.DataGrid
         [Parameter] public TextAlignment TextAlignment { get; set; }
 
         /// <summary>
+        /// Defines the vertical alignment for display cell.
+        /// </summary>
+        [Parameter] public VerticalAlignment VerticalAlignment { get; set; }
+
+        /// <summary>
+        /// Specifies the display behavior of a cell.
+        /// </summary>
+        [Parameter] public IFluentDisplay Display { get; set; }
+
+        /// <summary>
         /// Defines the alignment for column header cell.
         /// </summary>
         [Parameter] public TextAlignment HeaderTextAlignment { get; set; }
+
+        /// <summary>
+        /// Defines the vertical alignment for column header cell.
+        /// </summary>
+        [Parameter] public VerticalAlignment HeaderVerticalAlignment { get; set; }
+
+        /// <summary>
+        /// Specifies the display behavior of a header cell.
+        /// </summary>
+        [Parameter] public IFluentDisplay HeaderDisplay { get; set; }
 
         /// <summary>
         /// Gets or sets whether users can edit cell values under this column.
@@ -346,14 +418,14 @@ namespace Blazorise.DataGrid
         [Parameter] public string GroupCellStyle { get; set; }
 
         /// <summary>
-        /// Template for custom cell display formating.
+        /// Template for custom cell display formatting.
         /// </summary>
         [Parameter] public RenderFragment<TItem> DisplayTemplate { get; set; }
 
         /// <summary>
         /// Template for custom column filter rendering.
         /// </summary>
-        [Parameter] public RenderFragment<FilterContext> FilterTemplate { get; set; }
+        [Parameter] public RenderFragment<FilterContext<TItem>> FilterTemplate { get; set; }
 
         /// <summary>
         /// Defines the size of field for popup modal.
@@ -368,13 +440,27 @@ namespace Blazorise.DataGrid
         /// <summary>
         /// Validates the input value after trying to save.
         /// </summary>
-        [Parameter]
-        public Action<ValidatorEventArgs> Validator { get; set; }
+        [Parameter] public Action<ValidatorEventArgs> Validator { get; set; }
+
+        /// <summary>
+        /// Asynchronously validates the input value after trying to save.
+        /// </summary>
+        [Parameter] public Func<ValidatorEventArgs, CancellationToken, Task> AsyncValidator { get; set; }
 
         /// <summary>
         /// Forces validation to use regex pattern matching instead of default validator handler.
         /// </summary>
         [Parameter] public string ValidationPattern { get; set; }
+
+        /// <summary>
+        /// Provides a Sort Field to be used instead by the Sorting mechanism
+        /// </summary>
+        [Parameter] public string SortField { get; set; }
+
+        /// <summary>
+        /// Will set @onclick:StopProgration to true, stopping the RowClick and consequent events from triggering.
+        /// </summary>
+        [Parameter] public bool PreventRowClick { get; set; }
 
         #endregion
     }

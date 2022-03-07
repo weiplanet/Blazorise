@@ -2,6 +2,7 @@
 using System;
 using System.Threading.Tasks;
 using Blazorise.Extensions;
+using Blazorise.Modules;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
@@ -13,7 +14,7 @@ namespace Blazorise
     /// A component that renders an anchor tag, automatically toggling its 'active'
     /// class based on whether its 'href' matches the current URI.
     /// </summary>
-    public partial class Link : BaseComponent
+    public partial class Link : BaseComponent, IDisposable
     {
         #region Members
 
@@ -41,8 +42,8 @@ namespace Blazorise
             PreventDefault = false;
 
             // in case the user has specified href instead of To we need to use that instead
-            if ( Attributes?.ContainsKey( "href" ) == true )
-                To = $"{Attributes["href"]}";
+            if ( Attributes != null && Attributes.TryGetValue( "href", out var href ) )
+                To = $"{href}";
 
             if ( To != null && To.StartsWith( "#" ) )
             {
@@ -80,7 +81,10 @@ namespace Blazorise
             if ( disposing )
             {
                 // To avoid leaking memory, it's important to detach any event handlers in Dispose()
-                NavigationManager.LocationChanged -= OnLocationChanged;
+                if ( NavigationManager != null )
+                {
+                    NavigationManager.LocationChanged -= OnLocationChanged;
+                }
             }
 
             base.Dispose( disposing );
@@ -110,10 +114,10 @@ namespace Blazorise
         {
             if ( !string.IsNullOrEmpty( anchorTarget ) )
             {
-                await JSRunner.ScrollIntoView( anchorTarget );
+                await JSUtilitiesModule.ScrollAnchorIntoView( anchorTarget );
             }
 
-            await Clicked.InvokeAsync( null );
+            await Clicked.InvokeAsync();
         }
 
         private bool ShouldMatch( string currentUriAbsolute )
@@ -206,7 +210,7 @@ namespace Blazorise
 
         #endregion
 
-        #region Properties        
+        #region Properties
 
         /// <summary>
         /// Indicates if the default behavior will be prevented.
@@ -217,6 +221,16 @@ namespace Blazorise
         /// Gets the link target name.
         /// </summary>
         protected string TargetName => Target.ToTargetString();
+
+        /// <summary>
+        /// Gets or sets the <see cref="IJSUtilitiesModule"/> instance.
+        /// </summary>
+        [Inject] public IJSUtilitiesModule JSUtilitiesModule { get; set; }
+
+        /// <summary>
+        /// Gets or sets the navigation manager instance.
+        /// </summary>
+        [Inject] private NavigationManager NavigationManager { get; set; }
 
         /// <summary>
         /// Denotes the target route of the link.
@@ -231,7 +245,7 @@ namespace Blazorise
         /// <summary>
         /// The target attribute specifies where to open the linked document.
         /// </summary>
-        [Parameter] public Target Target { get; set; } = Target.None;
+        [Parameter] public Target Target { get; set; } = Target.Default;
 
         /// <summary>
         /// Specify extra information about the element.
@@ -242,8 +256,6 @@ namespace Blazorise
         /// Occurs when the link is clicked.
         /// </summary>
         [Parameter] public EventCallback Clicked { get; set; }
-
-        [Inject] private NavigationManager NavigationManager { get; set; }
 
         /// <summary>
         /// Specifies the content to be rendered inside this <see cref="Link"/>.

@@ -9,6 +9,7 @@
 @import "buttons";
 @import "card";
 @import "dropdown";
+@import "extensions";
 @import "figure";
 @import "form";
 @import "grid";
@@ -18,6 +19,7 @@
 @import "modal";
 @import "pagination";
 @import "progress";
+@import "rating";
 @import "table";
 @import "tabs";
 @import "typography";
@@ -26,3 +28,5 @@
 
 @import "background";
 @import "utilities";
+
+@import "vendor/flatpickr";

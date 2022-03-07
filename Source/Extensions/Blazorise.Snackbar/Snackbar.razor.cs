@@ -12,7 +12,7 @@ namespace Blazorise.Snackbar
     /// <summary>
     /// Snackbars provide brief messages about app processes. The component is also known as a toast.
     /// </summary>
-    public partial class Snackbar : BaseComponent
+    public partial class Snackbar : BaseComponent, IDisposable
     {
         #region Members
 
@@ -36,7 +36,7 @@ namespace Blazorise.Snackbar
         /// <summary>
         /// Snackbar color.
         /// </summary>
-        private SnackbarColor snackbarColor = SnackbarColor.None;
+        private SnackbarColor snackbarColor = SnackbarColor.Default;
 
         /// <summary>
         /// Timer used to countdown the close event.
@@ -56,7 +56,7 @@ namespace Blazorise.Snackbar
         /// <summary>
         /// List of all action buttons placed inside of a snackbar.
         /// </summary>
-        private List<SnackbarAction> snackbarActions = new List<SnackbarAction>();
+        private List<SnackbarAction> snackbarActions = new();
 
         #endregion
 
@@ -67,8 +67,8 @@ namespace Blazorise.Snackbar
             builder.Append( "snackbar" );
             builder.Append( "snackbar-show", Visible );
             builder.Append( "snackbar-multi-line", Multiline );
-            builder.Append( $"snackbar-{ Location.GetName()}", Location != SnackbarLocation.None );
-            builder.Append( $"snackbar-{Color.GetName()}", Color != SnackbarColor.None );
+            builder.Append( $"snackbar-{ Location.GetName()}", Location != SnackbarLocation.Default );
+            builder.Append( $"snackbar-{Color.GetName()}", Color != SnackbarColor.Default );
 
             base.BuildClasses( builder );
         }
@@ -77,7 +77,7 @@ namespace Blazorise.Snackbar
         {
             if ( countdownTimer == null )
             {
-                countdownTimer = new CountdownTimer( Interval );
+                countdownTimer = new( Interval );
 
                 countdownTimer.Elapsed += OnCountdownTimerElapsed;
             }
@@ -85,6 +85,7 @@ namespace Blazorise.Snackbar
             base.OnInitialized();
         }
 
+        /// <inheritdoc/>
         protected override void Dispose( bool disposing )
         {
             if ( disposing )
@@ -119,28 +120,28 @@ namespace Blazorise.Snackbar
         /// <summary>
         /// Shows the snackbar.
         /// </summary>
-        public void Show()
+        public Task Show()
         {
             if ( Visible )
-                return;
+                return Task.CompletedTask;
 
             Visible = true;
 
-            InvokeAsync( StateHasChanged );
+            return InvokeAsync( StateHasChanged );
         }
 
         /// <summary>
         /// Hides the snackbar.
         /// </summary>
-        public void Hide()
+        public Task Hide()
         {
-            Hide( SnackbarCloseReason.UserClosed );
+            return Hide( SnackbarCloseReason.UserClosed );
         }
 
-        private void Hide( SnackbarCloseReason closeReason )
+        protected Task Hide( SnackbarCloseReason closeReason )
         {
             if ( !Visible )
-                return;
+                return Task.CompletedTask;
 
             this.closeReason = closeReason;
 
@@ -151,7 +152,7 @@ namespace Blazorise.Snackbar
             // finally reset close reason so it doesn't interfere with internal closing by Visible property
             this.closeReason = SnackbarCloseReason.None;
 
-            InvokeAsync( StateHasChanged );
+            return InvokeAsync( StateHasChanged );
         }
 
         private void OnCountdownTimerElapsed( object sender, EventArgs e )
@@ -180,7 +181,7 @@ namespace Blazorise.Snackbar
         {
             if ( !visible )
             {
-                _ = Closed.InvokeAsync( new SnackbarClosedEventArgs( Key, closeReason ) );
+                _ = Closed.InvokeAsync( new( Key, closeReason ) );
             }
         }
 
@@ -285,7 +286,7 @@ namespace Blazorise.Snackbar
         /// <summary>
         /// Defines the interval(in milliseconds) after which the snackbar will be automatically closed.
         /// </summary>
-        [Parameter] public double Interval { get; set; } = 5000;
+        [Parameter] public double Interval { get; set; } = Constants.DefaultIntervalBeforeClose;
 
         /// <summary>
         /// If clicked on snackbar, a close action will be delayed by increasing the <see cref="Interval"/> time.

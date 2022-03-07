@@ -1,4 +1,6 @@
 ﻿#region Using directives
+using System;
+using System.Threading.Tasks;
 using Blazorise.States;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
@@ -9,9 +11,14 @@ namespace Blazorise
     /// <summary>
     /// A container for each <see cref="Tab"/> inside of <see cref="Tabs"/> component.
     /// </summary>
-    public partial class TabPanel : BaseComponent
+    public partial class TabPanel : BaseComponent, IDisposable
     {
         #region Members
+
+        /// <summary>
+        /// Tracks whether the component fulfills the requirements to be lazy loaded and then kept rendered to the DOM.
+        /// </summary>
+        private bool lazyLoaded;
 
         /// <summary>
         /// A reference to the parent tabs state.
@@ -39,17 +46,19 @@ namespace Blazorise
         /// <inheritdoc/>
         protected override void OnInitialized()
         {
-            if ( ParentTabs != null )
-            {
-                ParentTabs.NotifyTabPanelInitialized( Name );
-            }
+            ParentTabs?.NotifyTabPanelInitialized( Name );
 
-            if ( ParentTabsContent != null )
-            {
-                ParentTabsContent.NotifyTabPanelInitialized( Name );
-            }
+            ParentTabsContent?.NotifyTabPanelInitialized( Name );
 
             base.OnInitialized();
+        }
+
+        /// <inheritdoc/>
+        protected override Task OnParametersSetAsync()
+        {
+            if ( Active )
+                lazyLoaded = ( RenderMode == TabsRenderMode.LazyLoad );
+            return base.OnParametersSetAsync();
         }
 
         /// <inheritdoc/>
@@ -57,15 +66,9 @@ namespace Blazorise
         {
             if ( disposing )
             {
-                if ( ParentTabs != null )
-                {
-                    ParentTabs.NotifyTabPanelRemoved( Name );
-                }
+                ParentTabs?.NotifyTabPanelRemoved( Name );
 
-                if ( ParentTabsContent != null )
-                {
-                    ParentTabsContent.NotifyTabPanelRemoved( Name );
-                }
+                ParentTabsContent?.NotifyTabPanelRemoved( Name );
             }
 
             base.Dispose( disposing );
@@ -81,7 +84,12 @@ namespace Blazorise
         protected bool Active => ParentTabsState?.SelectedTab == Name || ParentTabsContentState?.SelectedPanel == Name;
 
         /// <summary>
-        /// Defines the panel name. Must match the coresponding tab name.
+        /// Gets the current render mode.
+        /// </summary>
+        protected TabsRenderMode RenderMode => ParentTabsState?.RenderMode ?? TabsRenderMode.Default;
+
+        /// <summary>
+        /// Defines the panel name. Must match the corresponding tab name.
         /// </summary>
         [Parameter] public string Name { get; set; }
 

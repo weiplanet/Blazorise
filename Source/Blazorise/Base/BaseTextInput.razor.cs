@@ -12,7 +12,7 @@ namespace Blazorise
     /// Base component for inputs that are text-based.
     /// </summary>
     /// <typeparam name="TValue">Editable value type.</typeparam>
-    public abstract class BaseTextInput<TValue> : BaseInputComponent<TValue>
+    public abstract class BaseTextInput<TValue> : BaseInputComponent<TValue>, ISelectableComponent, IDisposable
     {
         #region Members
 
@@ -27,10 +27,10 @@ namespace Blazorise
         /// <inheritdoc/>
         protected override void OnInitialized()
         {
-            if ( IsDelayTextOnKeyPress )
+            if ( IsDebounce )
             {
-                inputValueDebouncer = new ValueDebouncer( DelayTextOnKeyPressIntervalValue );
-                inputValueDebouncer.Debounced += OnInputValueDebounced;
+                inputValueDebouncer = new( DebounceIntervalValue );
+                inputValueDebouncer.Debounce += OnInputValueDebounce;
             }
 
             base.OnInitialized();
@@ -39,13 +39,37 @@ namespace Blazorise
         /// <inheritdoc/>
         protected override void Dispose( bool disposing )
         {
-            if ( inputValueDebouncer != null )
+            if ( disposing )
             {
-                inputValueDebouncer.Debounced -= OnInputValueDebounced;
-                inputValueDebouncer = null;
+                ReleaseResources();
             }
 
             base.Dispose( disposing );
+        }
+
+        /// <inheritdoc/>
+        protected override ValueTask DisposeAsync( bool disposing )
+        {
+            if ( disposing )
+            {
+                ReleaseResources();
+            }
+
+            return base.DisposeAsync( disposing );
+        }
+
+        /// <summary>
+        /// Shared code to dispose of any internal resources.
+        /// </summary>
+        protected override void ReleaseResources()
+        {
+            if ( inputValueDebouncer != null )
+            {
+                inputValueDebouncer.Debounce -= OnInputValueDebounce;
+                inputValueDebouncer = null;
+            }
+
+            base.ReleaseResources();
         }
 
         /// <summary>
@@ -55,7 +79,7 @@ namespace Blazorise
         /// <returns>Returns awaitable task</returns>
         protected virtual Task OnChangeHandler( ChangeEventArgs eventArgs )
         {
-            if ( !IsChangeTextOnKeyPress )
+            if ( !IsImmediate )
             {
                 return CurrentValueHandler( eventArgs?.Value?.ToString() );
             }
@@ -68,30 +92,29 @@ namespace Blazorise
         /// </summary>
         /// <param name="eventArgs">Information about the changed event.</param>
         /// <returns>Returns awaitable task</returns>
-        protected virtual async Task OnInputHandler( ChangeEventArgs eventArgs )
+        protected virtual Task OnInputHandler( ChangeEventArgs eventArgs )
         {
-            if ( IsChangeTextOnKeyPress )
+            if ( IsImmediate )
             {
-                if ( IsDelayTextOnKeyPress )
+                var value = eventArgs?.Value?.ToString();
+                if ( IsDebounce )
                 {
-                    inputValueDebouncer?.Update( eventArgs?.Value?.ToString() );
+                    inputValueDebouncer?.Update( value );
                 }
                 else
                 {
-                    var caret = await JSRunner.GetCaret( ElementRef );
-
-                    await CurrentValueHandler( eventArgs?.Value?.ToString() );
-
-                    await JSRunner.SetCaret( ElementRef, caret );
+                    return CurrentValueHandler( value );
                 }
             }
+
+            return Task.CompletedTask;
         }
 
         /// <inheritdoc/>
         protected override Task OnKeyPressHandler( KeyboardEventArgs eventArgs )
         {
-            if ( IsChangeTextOnKeyPress
-                && IsDelayTextOnKeyPress
+            if ( IsImmediate
+                && IsDebounce
                 && ( eventArgs?.Key?.Equals( "Enter", StringComparison.OrdinalIgnoreCase ) ?? false ) )
             {
                 inputValueDebouncer?.Flush();
@@ -103,8 +126,8 @@ namespace Blazorise
         /// <inheritdoc/>
         protected override Task OnBlurHandler( FocusEventArgs eventArgs )
         {
-            if ( IsChangeTextOnKeyPress
-                && IsDelayTextOnKeyPress )
+            if ( IsImmediate
+                && IsDebounce )
             {
                 inputValueDebouncer?.Flush();
             }
@@ -117,9 +140,15 @@ namespace Blazorise
         /// </summary>
         /// <param name="sender">Object that raised an event.</param>
         /// <param name="value">Latest received value.</param>
-        private void OnInputValueDebounced( object sender, string value )
+        private void OnInputValueDebounce( object sender, string value )
         {
             InvokeAsync( () => CurrentValueHandler( value ) );
+        }
+
+        /// <inheritdoc/>
+        public virtual Task Select( bool focus = true )
+        {
+            return JSUtilitiesModule.Select( ElementRef, ElementId, focus ).AsTask();
         }
 
         #endregion
@@ -129,20 +158,26 @@ namespace Blazorise
         /// <summary>
         /// Returns true if internal value should be updated with each key press.
         /// </summary>
-        protected bool IsChangeTextOnKeyPress
-            => ChangeTextOnKeyPress.GetValueOrDefault( Options?.ChangeTextOnKeyPress ?? true );
+        protected bool IsImmediate
+            => Immediate.GetValueOrDefault( Options?.Immediate ?? true );
 
         /// <summary>
         /// Returns true if updating of internal value should be delayed.
         /// </summary>
-        protected bool IsDelayTextOnKeyPress
-            => DelayTextOnKeyPress.GetValueOrDefault( Options?.DelayTextOnKeyPress ?? false );
+        protected bool IsDebounce
+            => Debounce.GetValueOrDefault( Options?.Debounce ?? false );
 
         /// <summary>
         /// Time in milliseconds by which internal value update should be delayed.
         /// </summary>
-        protected int DelayTextOnKeyPressIntervalValue
-            => DelayTextOnKeyPressInterval.GetValueOrDefault( Options?.DelayTextOnKeyPressInterval ?? 300 );
+        protected int DebounceIntervalValue
+            => DebounceInterval.GetValueOrDefault( Options?.DebounceInterval ?? 300 );
+
+        /// <summary>
+        /// the name of the event for the input element.
+        /// </summary>
+        protected string BindValueEventName
+            => IsImmediate ? "oninput" : "onchange";
 
         /// <summary>
         /// Sets the placeholder for the empty text.
@@ -178,19 +213,19 @@ namespace Blazorise
         /// If true the text in will be changed after each key press.
         /// </summary>
         /// <remarks>
-        /// Note that setting this will override global settings in <see cref="BlazoriseOptions.ChangeTextOnKeyPress"/>.
+        /// Note that setting this will override global settings in <see cref="BlazoriseOptions.Immediate"/>.
         /// </remarks>
-        [Parameter] public bool? ChangeTextOnKeyPress { get; set; }
+        [Parameter] public bool? Immediate { get; set; }
 
         /// <summary>
-        /// If true the entered text will be slightly delayed before submiting it to the internal value.
+        /// If true the entered text will be slightly delayed before submitting it to the internal value.
         /// </summary>
-        [Parameter] public bool? DelayTextOnKeyPress { get; set; }
+        [Parameter] public bool? Debounce { get; set; }
 
         /// <summary>
-        /// Interval in milliseconds that entered text will be delayed from submiting to the internal value.
+        /// Interval in milliseconds that entered text will be delayed from submitting to the internal value.
         /// </summary>
-        [Parameter] public int? DelayTextOnKeyPressInterval { get; set; }
+        [Parameter] public int? DebounceInterval { get; set; }
 
         #endregion
     }

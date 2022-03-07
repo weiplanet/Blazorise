@@ -1,7 +1,7 @@
 ﻿#region Using directives
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 #endregion
@@ -12,7 +12,7 @@ namespace Blazorise.Components
     /// Dynamically builds select component and it's items based in the supplied data.
     /// </summary>
     /// <typeparam name="TItem">Data item type.</typeparam>
-    /// <typeparam name="TValue">Type if the value inside of <see cref="TItem"/>.</typeparam>
+    /// <typeparam name="TValue">Type if the value inside of <see cref="SelectList{TItem, TValue}"/>.</typeparam>
     public partial class SelectList<TItem, TValue> : ComponentBase
     {
         #region Members
@@ -20,7 +20,7 @@ namespace Blazorise.Components
         /// <summary>
         /// Reference to the <see cref="Select{TValue}"/> component.
         /// </summary>
-        protected Select<TValue> selectRef;
+        private Select<TValue> selectRef;
 
         #endregion
 
@@ -36,9 +36,10 @@ namespace Blazorise.Components
         /// Sets focus on the input element, if it can be focused.
         /// </summary>
         /// <param name="scrollToElement">If true the browser should scroll the document to bring the newly-focused element into view.</param>
-        public void Focus( bool scrollToElement = true )
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        public Task Focus( bool scrollToElement = true )
         {
-            selectRef.Focus( scrollToElement );
+            return selectRef.Focus( scrollToElement );
         }
 
         #endregion
@@ -49,6 +50,12 @@ namespace Blazorise.Components
         /// Gets or sets the select element id.
         /// </summary>
         [Parameter] public string ElementId { get; set; }
+
+
+        /// <summary>
+        /// Specifies that multiple items can be selected.
+        /// </summary>
+        [Parameter] public bool Multiple { get; set; }
 
         /// <summary>
         /// Gets or sets the select data-source.
@@ -76,6 +83,31 @@ namespace Blazorise.Components
         [Parameter] public EventCallback<TValue> SelectedValueChanged { get; set; }
 
         /// <summary>
+        /// Gets or sets an expression that identifies the selected value.
+        /// </summary>
+        [Parameter] public Expression<Func<TValue>> SelectedValueExpression { get; set; }
+
+        /// <summary>
+        /// Display text of the default select item.
+        /// </summary>
+        [Parameter] public string DefaultItemText { get; set; }
+
+        /// <summary>
+        /// Value of the default select item.
+        /// </summary>
+        [Parameter] public TValue DefaultItemValue { get; set; }
+
+        /// <summary>
+        /// If true, disables the default item.
+        /// </summary>
+        [Parameter] public bool DefaultItemDisabled { get; set; } = false;
+
+        /// <summary>
+        /// If true, disables the default item.
+        /// </summary>
+        [Parameter] public bool DefaultItemHidden { get; set; } = false;
+
+        /// <summary>
         /// Custom css class-names.
         /// </summary>
         [Parameter] public string Class { get; set; }
@@ -88,7 +120,7 @@ namespace Blazorise.Components
         /// <summary>
         /// Size of a select field.
         /// </summary>
-        [Parameter] public Size Size { get; set; } = Size.None;
+        [Parameter] public Size? Size { get; set; }
 
         /// <summary>
         /// Specifies how many options should be shown at once.
@@ -101,10 +133,20 @@ namespace Blazorise.Components
         [Parameter] public int? TabIndex { get; set; }
 
         /// <summary>
+        /// Add the disabled boolean attribute on an select to prevent user interactions and make it appear lighter.
+        /// </summary>
+        [Parameter] public bool Disabled { get; set; }
+
+        /// <summary>
         /// Captures all the custom attribute that are not part of Blazorise component.
         /// </summary>
         [Parameter( CaptureUnmatchedValues = true )]
         public Dictionary<string, object> Attributes { get; set; }
+
+        /// <summary>
+        /// Placeholder for validation messages.
+        /// </summary>
+        [Parameter] public RenderFragment Feedback { get; set; }
 
         /// <summary>
         /// Specifies the content to be rendered inside this <see cref="SelectList{TItem, TValue}"/>.

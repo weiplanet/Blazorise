@@ -1,5 +1,6 @@
 ﻿#region Using directives
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Blazorise.States;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
@@ -7,6 +8,9 @@ using Microsoft.AspNetCore.Components;
 
 namespace Blazorise
 {
+    /// <summary>
+    /// Steps is a navigation bar that guides users through the steps of a task.
+    /// </summary>
     public partial class Steps : BaseComponent
     {
         #region Members
@@ -21,15 +25,19 @@ namespace Blazorise
 
         #region Constructors
 
+        /// <summary>
+        /// A default <see cref="Step"/> constructor.
+        /// </summary>
         public Steps()
         {
-            ContentClassBuilder = new ClassBuilder( BuildContentClasses );
+            ContentClassBuilder = new( BuildContentClasses );
         }
 
         #endregion
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.Steps() );
@@ -70,11 +78,12 @@ namespace Blazorise
         /// Sets the active step by the name.
         /// </summary>
         /// <param name="stepName"></param>
-        public void SelectStep( string stepName )
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        public Task SelectStep( string stepName )
         {
             SelectedStep = stepName;
 
-            InvokeAsync( StateHasChanged );
+            return InvokeAsync( StateHasChanged );
         }
 
         /// <summary>
@@ -91,14 +100,29 @@ namespace Blazorise
 
         #region Properties
 
+        /// <summary>
+        /// Gets the steps state object.
+        /// </summary>
         protected StepsState State => state;
 
+        /// <summary>
+        /// Gets the list of all <see cref="Step"/>s  within the <see cref="Steps"/>.
+        /// </summary>
         protected IReadOnlyList<string> StepItems => stepItems;
 
+        /// <summary>
+        /// Gets the list of all <see cref="StepPanel"/>s within the <see cref="Steps"/>.
+        /// </summary>
         protected IReadOnlyList<string> StepPanels => stepPanels;
 
+        /// <summary>
+        /// Content element class builder.
+        /// </summary>
         protected ClassBuilder ContentClassBuilder { get; private set; }
 
+        /// <summary>
+        /// Gets the classnames for the content element.
+        /// </summary>
         protected string ContentClassNames => ContentClassBuilder.Class;
 
         /// <summary>
@@ -128,10 +152,19 @@ namespace Blazorise
         /// </summary>
         [Parameter] public EventCallback<string> SelectedStepChanged { get; set; }
 
+        /// <summary>
+        /// Template for placing the <see cref="Step"/> items.
+        /// </summary>
         [Parameter] public RenderFragment Items { get; set; }
 
+        /// <summary>
+        /// Template for placing the <see cref="StepPanel"/> items.
+        /// </summary>
         [Parameter] public RenderFragment Content { get; set; }
 
+        /// <summary>
+        /// Specifies the content to be rendered inside this <see cref="Steps"/>.
+        /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
 
         #endregion

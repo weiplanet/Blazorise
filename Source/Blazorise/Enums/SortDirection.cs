@@ -1,7 +1,4 @@
-﻿#region Using directives
-#endregion
-
-namespace Blazorise
+﻿namespace Blazorise
 {
     /// <summary>
     /// Specifies the direction of a sort operation.
@@ -11,7 +8,7 @@ namespace Blazorise
         /// <summary>
         /// No sorting will be applied.
         /// </summary>
-        None = 0,
+        Default = 0,
 
         /// <summary>
         /// Sorts in ascending order.

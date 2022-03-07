@@ -4,7 +4,7 @@
     <Column>
         <Card Margin="Margin.Is4.OnY">
             <CardHeader>
-                <CardTitle>Rich Text Editor (based on <Blazorise.Link To="https://quilljs.com/">QuillJs</Blazorise.Link>)</CardTitle>
+                <CardTitle>Rich Text Editor (based on <Anchor To="https://quilljs.com/">QuillJs</Anchor>)</CardTitle>
             </CardHeader>
             <CardBody>
                 <CardBody>
@@ -55,7 +55,7 @@
                             <RichTextEditToolbarGroup>
                                 <RichTextEditToolbarSelect Action="RichTextEditAction.Size">
                                     <RichTextEditToolbarSelectItem Value="small" />
-                                    <RichTextEditToolbarSelectItem Selected="true" />
+                                    <RichTextEditToolbarSelectItem Selected />
                                     <RichTextEditToolbarSelectItem Value="large" />
                                     <RichTextEditToolbarSelectItem Value="huge">Very Big</RichTextEditToolbarSelectItem>
                                 </RichTextEditToolbarSelect>
@@ -80,7 +80,7 @@
                                 <RichTextEditToolbarButton Action="RichTextEditAction.Link" />
                                 <RichTextEditToolbarButton Action="RichTextEditAction.Image" />
                             </RichTextEditToolbarGroup>
-                            <RichTextEditToolbarGroup Float="Float.Right">
+                            <RichTextEditToolbarGroup Float="Float.End">
                                 <Button Class="btn-icon" Size="Size.ExtraSmall" onClick="window.open('https://www.quilljs.com/','quilljs')"><Icon Name="IconName.InfoCircle" /></Button>
                                 <Button Class="btn-icon" Size="Size.ExtraSmall" Clicked="@OnSave"><Icon Name="IconName.Save" /></Button>
                             </RichTextEditToolbarGroup>
@@ -130,7 +130,7 @@
                 <CardTitle>Bubble theme</CardTitle>
             </CardHeader>
             <CardBody>
-                <Alert Visible="true">
+                <Alert Visible>
                     <AlertMessage>Note:</AlertMessage>
                     <AlertDescription>Start typing and change format by key bindings or by selecting the text</AlertDescription>
                 </Alert>
@@ -157,7 +157,7 @@
     </Column>
 </Row>
 <Modal @ref="modalRef">
-    <ModalContent Size="ModalSize.Default" Centered="true">
+    <ModalContent Size="ModalSize.Default" Centered>
         <ModalHeader>
             <ModalTitle>Saved content</ModalTitle>
             <CloseButton />
@@ -183,9 +183,11 @@
     private string contentFromCode;
     private string lastEvent;
 
-    protected async Task OnUpdateContent()
+    protected Task OnUpdateContent()
     {
         contentFromCode = $"<p>Content from code {DateTime.Now}</p>";
+
+        return Task.CompletedTask;
     }
 
     public async Task OnContentChanged()
@@ -197,14 +199,13 @@
 
     public async Task OnContentChanged2()
     {
-        var content = await richTextEditRef2.GetHtmlAsync();
-        Console.WriteLine( content );
+        contentFromCode = await richTextEditRef2.GetHtmlAsync();
     }
 
     public async Task OnSave()
     {
         savedContent = await richTextEditRef.GetHtmlAsync();
-        modalRef.Show();
+        await modalRef.Show();
         await richTextEditRef.ClearAsync();
     }
 }

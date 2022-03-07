@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components.Forms;
 #endregion
 
@@ -23,9 +25,14 @@ namespace Blazorise
         IEnumerable<string> Messages { get; }
 
         /// <summary>
-        /// Gets the validator handler attched to this validation.
+        /// Gets the validator handler attached to this validation.
         /// </summary>
         Action<ValidatorEventArgs> Validator { get; }
+
+        /// <summary>
+        /// Gets the asynchronous validator handler attached to this validation.
+        /// </summary>
+        Func<ValidatorEventArgs, CancellationToken, Task> AsyncValidator { get; }
 
         /// <summary>
         /// Gets the pattern regex attached to this validation.
@@ -63,5 +70,10 @@ namespace Blazorise
         /// <param name="status">New <see cref="ValidationStatus"/>.</param>
         /// <param name="messages">New error or success message(s).</param>
         void NotifyValidationStatusChanged( ValidationStatus status, IEnumerable<string> messages = null );
+
+        /// <summary>
+        /// Runs the asynchronous validation process based on the last available value.
+        /// </summary>
+        public Task<ValidationStatus> ValidateAsync();
     }
 }

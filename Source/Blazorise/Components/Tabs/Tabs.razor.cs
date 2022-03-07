@@ -1,5 +1,6 @@
 ﻿#region Using directives
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Blazorise.States;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
@@ -41,7 +42,7 @@ namespace Blazorise
         /// </summary>
         public Tabs()
         {
-            ContentClassBuilder = new ClassBuilder( BuildContentClasses );
+            ContentClassBuilder = new( BuildContentClasses );
         }
 
         #endregion
@@ -55,7 +56,7 @@ namespace Blazorise
             builder.Append( ClassProvider.TabsCards(), IsCards );
             builder.Append( ClassProvider.TabsFullWidth(), FullWidth );
             builder.Append( ClassProvider.TabsJustified(), Justified );
-            builder.Append( ClassProvider.TabsVertical(), TabPosition == TabPosition.Left || TabPosition == TabPosition.Right );
+            builder.Append( ClassProvider.TabsVertical(), TabPosition == TabPosition.Start || TabPosition == TabPosition.End );
 
             base.BuildClasses( builder );
         }
@@ -113,11 +114,12 @@ namespace Blazorise
         /// Sets the active tab by the name.
         /// </summary>
         /// <param name="tabName">The name of the tab.</param>
-        public void SelectTab( string tabName )
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        public Task SelectTab( string tabName )
         {
             SelectedTab = tabName;
 
-            InvokeAsync( StateHasChanged );
+            return InvokeAsync( StateHasChanged );
         }
 
         #endregion
@@ -218,6 +220,26 @@ namespace Blazorise
                 DirtyClasses();
             }
         }
+
+        /// <summary>
+        /// Defines how the tabs content will be rendered.
+        /// </summary>
+        [Parameter]
+        public TabsRenderMode RenderMode
+        {
+            get => state.RenderMode;
+            set
+            {
+                state = state with { RenderMode = value };
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Controls the size of the items bar when in vertical mode. If left undefined it will default to the <c>ColumnSize.IsAuto</c>.
+        /// </summary>
+        [Parameter] public IFluentColumn VerticalItemsColumnSize { get; set; }
 
         /// <summary>
         /// Gets or sets currently selected tab name.

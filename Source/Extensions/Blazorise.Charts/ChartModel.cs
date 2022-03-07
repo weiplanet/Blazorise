@@ -1,13 +1,10 @@
 ﻿#region Using directives
-using System.Collections.Generic;
-using System.Globalization;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 #endregion
 
 namespace Blazorise.Charts
 {
-    [DataContract]
     public class ChartModel
     {
         [JsonPropertyName( "x" )]
@@ -18,11 +15,10 @@ namespace Blazorise.Charts
     }
 
     /* ======== IMPORTANT ========
-    * The reason why base ChartModel class is not used is becaoue the Blazor serializer does not support inheritance.
+    * The reason why base ChartModel class is not used is because the Blazor serializer does not support inheritance.
     * Until that is fixed we must write every model without inherit fields.
     * =========================== */
 
-    [DataContract]
     public class LineChartModel : ChartModel
     {
         [JsonPropertyName( "label" )]
@@ -74,7 +70,6 @@ namespace Blazorise.Charts
         //public double Y { get; set; }
     }
 
-    [DataContract]
     public class BarChartModel : ChartModel
     {
         [JsonPropertyName( "label" )]
@@ -111,7 +106,6 @@ namespace Blazorise.Charts
         public double Width { get; set; }
     }
 
-    [DataContract]
     public class DoughnutChartModel : ChartModel
     {
         [JsonPropertyName( "label" )]
@@ -148,7 +142,6 @@ namespace Blazorise.Charts
         //public double Y { get; set; }
     }
 
-    [DataContract]
     public class PieChartModel : ChartModel
     {
         [JsonPropertyName( "label" )]
@@ -185,7 +178,6 @@ namespace Blazorise.Charts
         //public double Y { get; set; }
     }
 
-    [DataContract]
     public class PolarChartModel : ChartModel
     {
         [JsonPropertyName( "label" )]
@@ -216,7 +208,6 @@ namespace Blazorise.Charts
         //public double Y { get; set; }
     }
 
-    [DataContract]
     public class RadarChartModel : ChartModel
     {
         [JsonPropertyName( "label" )]
@@ -263,5 +254,13 @@ namespace Blazorise.Charts
 
         //[JsonPropertyName( "y" )]
         //public double Y { get; set; }
+    }
+
+    public class ScatterChartModel : ChartModel
+    {
+    }
+
+    public class BubbleChartModel : ChartModel
+    {
     }
 }

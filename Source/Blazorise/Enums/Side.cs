@@ -1,5 +1,4 @@
-﻿#region Using directives
-#endregion
+﻿using System;
 
 namespace Blazorise
 {
@@ -24,14 +23,14 @@ namespace Blazorise
         Bottom,
 
         /// <summary>
-        /// Left side.
+        /// Start side.
         /// </summary>
-        Left,
+        Start,
 
         /// <summary>
-        /// Right side.
+        /// End side.
         /// </summary>
-        Right,
+        End,
 
         /// <summary>
         /// Left and right side.

@@ -6,9 +6,14 @@
     public record BarDropdownState
     {
         /// <summary>
-        /// Gets or sets the dropdown menu visibilty state.
+        /// Gets or sets the dropdown menu visibility state.
         /// </summary>
         public bool Visible { get; init; }
+
+        /// <summary>
+        /// If true, a dropdown menu will be right aligned.
+        /// </summary>
+        public bool RightAligned { get; init; }
 
         /// <summary>
         /// Gets or sets the bar mode in which the dropdown is placed.
@@ -16,7 +21,7 @@
         public BarMode Mode { get; init; }
 
         /// <summary>
-        /// Gets or sets the visibilty of the bar component.
+        /// Gets or sets the visibility of the bar component.
         /// </summary>
         public bool BarVisible { get; init; }
 

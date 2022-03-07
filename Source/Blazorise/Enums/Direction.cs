@@ -1,5 +1,4 @@
-﻿#region Using directives
-#endregion
+﻿using System;
 
 namespace Blazorise
 {
@@ -9,9 +8,9 @@ namespace Blazorise
     public enum Direction
     {
         /// <summary>
-        /// Same as <see cref="Down"/>.
+        /// A default direction will be used, in most cases it is the same as <see cref="Down"/>.
         /// </summary>
-        None,
+        Default,
 
         /// <summary>
         /// Trigger dropdown menus bellow an element (default behaviour).
@@ -24,13 +23,13 @@ namespace Blazorise
         Up,
 
         /// <summary>
-        /// Trigger dropdown menus to the right of an element.
+        /// Trigger dropdown menus to the end of an element.
         /// </summary>
-        Right,
+        End,
 
         /// <summary>
-        /// Trigger dropdown menus to the left of an element.
+        /// Trigger dropdown menus to the start of an element.
         /// </summary>
-        Left,
+        Start,
     }
 }

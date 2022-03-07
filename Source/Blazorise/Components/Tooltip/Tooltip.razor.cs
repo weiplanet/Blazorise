@@ -1,28 +1,44 @@
 ﻿#region Using directives
+using System;
+using System.Threading.Tasks;
+using Blazorise.Extensions;
+using Blazorise.Modules;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
 #endregion
 
 namespace Blazorise
 {
-    public partial class Tooltip : BaseComponent
+    /// <summary>
+    /// Tooltips display informative text when users hover over, focus on, or tap an element.
+    /// </summary>
+    public partial class Tooltip : BaseComponent, IAsyncDisposable
     {
         #region Members
 
-        private Placement placement = Placement.Top;
+        private TooltipPlacement placement = TooltipPlacement.Top;
 
         private bool multiline;
 
         private bool alwaysActive;
 
+        private bool showArrow = true;
+
         private bool inline;
 
         private bool fade;
+
+        private int fadeDuration = 300;
+
+        private TooltipTrigger trigger = TooltipTrigger.MouseEnterFocus;
+
+        private bool autodetectInline;
 
         #endregion
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.Tooltip() );
@@ -35,18 +51,65 @@ namespace Blazorise
             base.BuildClasses( builder );
         }
 
-        protected override void OnInitialized()
+        /// <inheritdoc/>
+        public override Task SetParametersAsync( ParameterView parameters )
         {
-            if ( !Inline )
+            if ( parameters.TryGetValue<string>( nameof( Text ), out var paramText ) && Text != paramText )
             {
-                // try to detect if inline is needed
-                ExecuteAfterRender( async () =>
-                {
-                    await JSRunner.InitializeTooltip( ElementRef, ElementId );
-                } );
+                ExecuteAfterRender( async () => await JSModule.UpdateContent( ElementRef, ElementId, paramText ) );
             }
 
+            // autodetect inline mode only if Inline parameter is not explicitly defined
+            autodetectInline = !parameters.TryGetValue<bool>( nameof( Inline ), out var _ );
+
+            return base.SetParametersAsync( parameters );
+        }
+
+        /// <inheritdoc/>
+        protected override void OnInitialized()
+        {
+            // try to detect if inline is needed
+            ExecuteAfterRender( async () =>
+            {
+                await JSModule.Initialize( ElementRef, ElementId, new
+                {
+                    Text,
+                    Placement = ClassProvider.ToTooltipPlacement( Placement ),
+                    Multiline,
+                    AlwaysActive,
+                    ShowArrow,
+                    Fade,
+                    FadeDuration,
+                    Trigger = ToTippyTrigger( Trigger ),
+                    TriggerTargetId,
+                    MaxWidth = Theme?.TooltipOptions?.MaxWidth,
+                    AutodetectInline = autodetectInline,
+                } );
+            } );
+
             base.OnInitialized();
+        }
+
+        /// <inheritdoc/>
+        protected override async ValueTask DisposeAsync( bool disposing )
+        {
+            if ( disposing && Rendered )
+            {
+                await JSModule.SafeDestroy( ElementRef, ElementId );
+            }
+
+            await base.DisposeAsync( disposing );
+        }
+
+        private static string ToTippyTrigger( TooltipTrigger trigger )
+        {
+            return trigger switch
+            {
+                TooltipTrigger.Click => "click",
+                TooltipTrigger.Focus => "focusin",
+                TooltipTrigger.MouseEnterClick => "mouseenter click",
+                _ => "mouseenter focus",
+            };
         }
 
         #endregion
@@ -57,6 +120,11 @@ namespace Blazorise
         protected override bool ShouldAutoGenerateId => true;
 
         /// <summary>
+        /// Gets or sets the <see cref="IJSTooltipModule"/> instance.
+        /// </summary>
+        [Inject] public IJSTooltipModule JSModule { get; set; }
+
+        /// <summary>
         /// Gets or sets a regular tooltip's content. 
         /// </summary>
         [Parameter] public string Text { get; set; }
@@ -65,7 +133,7 @@ namespace Blazorise
         /// Gets or sets the tooltip location relative to it's component.
         /// </summary>
         [Parameter]
-        public Placement Placement
+        public TooltipPlacement Placement
         {
             get => placement;
             set
@@ -107,6 +175,21 @@ namespace Blazorise
         }
 
         /// <summary>
+        /// Gets or sets the tooltip arrow visibility.
+        /// </summary>
+        [Parameter]
+        public bool ShowArrow
+        {
+            get => showArrow;
+            set
+            {
+                showArrow = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
         /// Force inline block instead of trying to detect the element block.
         /// </summary>
         [Parameter]
@@ -136,7 +219,50 @@ namespace Blazorise
             }
         }
 
+        /// <summary>
+        /// Duration in ms of the fade transition animation.
+        /// </summary>
+        [Parameter]
+        public int FadeDuration
+        {
+            get => fadeDuration;
+            set
+            {
+                fadeDuration = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Determines the events that cause the tooltip to show.
+        /// </summary>
+        [Parameter]
+        public TooltipTrigger Trigger
+        {
+            get => trigger;
+            set
+            {
+                trigger = value;
+
+                DirtyClasses();
+            }
+        }
+
+        /// <summary>
+        /// Which element the trigger event listeners are applied to (instead of the reference element).
+        /// </summary>
+        [Parameter] public string TriggerTargetId { get; set; }
+
+        /// <summary>
+        /// Specifies the content to be rendered inside this <see cref="Tooltip"/>.
+        /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
+
+        /// <summary>
+        /// Cascaded theme settings.
+        /// </summary>
+        [CascadingParameter] public Theme Theme { get; set; }
 
         #endregion
     }

@@ -22,7 +22,7 @@ namespace Blazorise
         /// <summary>
         /// Holds the state for this <see cref="BarItem"/>.
         /// </summary>
-        private BarItemState state = new BarItemState
+        private BarItemState state = new()
         {
             Mode = BarMode.Horizontal,
         };
@@ -55,7 +55,7 @@ namespace Blazorise
         /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
-            builder.Append( ClassProvider.BarItem( State.Mode ) );
+            builder.Append( ClassProvider.BarItem( State.Mode, HasDropdown ) );
             builder.Append( ClassProvider.BarItemActive( State.Mode ), State.Active );
             builder.Append( ClassProvider.BarItemDisabled( State.Mode ), State.Disabled );
             builder.Append( ClassProvider.BarItemHasDropdown( State.Mode ), HasDropdown );

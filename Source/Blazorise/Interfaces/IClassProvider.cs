@@ -1,12 +1,10 @@
 ﻿#region Using directives
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 #endregion
 
 namespace Blazorise
 {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     public interface IClassProvider
     {
         #region TextEdit
@@ -23,7 +21,9 @@ namespace Blazorise
 
         #region MemoEdit
 
-        string MemoEdit();
+        string MemoEdit( bool plaintext );
+
+        string MemoEditSize( Size size );
 
         string MemoEditValidation( ValidationStatus validationStatus );
 
@@ -81,6 +81,64 @@ namespace Blazorise
 
         string ColorEdit();
 
+        string ColorEditSize( Size size );
+
+        #endregion
+
+        #region DatePicker
+
+        string DatePicker( bool plaintext );
+
+        string DatePickerSize( Size size );
+
+        string DatePickerColor( Color color );
+
+        string DatePickerValidation( ValidationStatus validationStatus );
+
+        #endregion
+
+        #region TimePicker
+
+        string TimePicker( bool plaintext );
+
+        string TimePickerSize( Size size );
+
+        string TimePickerColor( Color color );
+
+        string TimePickerValidation( ValidationStatus validationStatus );
+
+        #endregion
+
+        #region ColorPicker
+
+        string ColorPicker();
+
+        string ColorPickerSize( Size size );
+
+        #endregion
+
+        #region NumericPicker
+
+        string NumericPicker( bool plaintext );
+
+        string NumericPickerSize( Size size );
+
+        string NumericPickerColor( Color color );
+
+        string NumericPickerValidation( ValidationStatus validationStatus );
+
+        #endregion
+
+        #region InputMask
+
+        string InputMask( bool plaintext );
+
+        string InputMaskSize( Size size );
+
+        string InputMaskColor( Color color );
+
+        string InputMaskValidation( ValidationStatus validationStatus );
+
         #endregion
 
         #region Check
@@ -100,6 +158,8 @@ namespace Blazorise
         #region RadioGroup
 
         string RadioGroup( bool buttons, Orientation orientation );
+
+        public string RadioGroupSize( bool buttons, Orientation orientation, Size size );
 
         string RadioGroupValidation( ValidationStatus validationStatus );
 
@@ -139,6 +199,8 @@ namespace Blazorise
 
         string FileEdit();
 
+        string FileEditSize( Size size );
+
         string FileEditValidation( ValidationStatus validationStatus );
 
         #endregion
@@ -148,6 +210,26 @@ namespace Blazorise
         string Slider();
 
         string SliderColor( Color color );
+
+        string SliderValidation( ValidationStatus validationStatus );
+
+        #endregion
+
+        #region Rating
+
+        string Rating();
+
+        string RatingDisabled( bool disabled );
+
+        string RatingReadonly( bool @readonly );
+
+        string RatingItem();
+
+        string RatingItemColor( Color color );
+
+        string RatingItemSelected( bool selected );
+
+        string RatingItemHovered( bool hover );
 
         #endregion
 
@@ -211,9 +293,7 @@ namespace Blazorise
 
         #region FieldLabel
 
-        string FieldLabel();
-
-        string FieldLabelHorizontal();
+        string FieldLabel( bool horizontal );
 
         #endregion
 
@@ -247,6 +327,8 @@ namespace Blazorise
 
         string Addons();
 
+        string AddonsSize( Size size );
+
         string AddonsHasButton( bool hasButton );
 
         string Addon( AddonType addonType );
@@ -277,21 +359,17 @@ namespace Blazorise
 
         string ButtonActive();
 
+        string ButtonDisabled();
+
         string ButtonLoading();
 
         #endregion
 
         #region Buttons
 
-        //string Buttons();
-
-        string ButtonsAddons();
-
-        string ButtonsToolbar();
+        string Buttons( ButtonsRole role, Orientation orientation );
 
         string ButtonsSize( Size size );
-
-        string ButtonsOrientation( Orientation orientation );
 
         #endregion
 
@@ -303,7 +381,7 @@ namespace Blazorise
 
         #region Dropdown
 
-        string Dropdown();
+        string Dropdown( bool isDropdownSubmenu );
 
         string DropdownGroup();
 
@@ -319,7 +397,11 @@ namespace Blazorise
 
         string DropdownDivider();
 
+        string DropdownHeader();
+
         string DropdownMenu();
+
+        string DropdownMenuScrollable();
 
         //string DropdownMenuBody();
 
@@ -327,7 +409,7 @@ namespace Blazorise
 
         string DropdownMenuRight();
 
-        string DropdownToggle();
+        string DropdownToggle( bool isDropdownSubmenu );
 
         string DropdownToggleColor( Color color );
 
@@ -411,6 +493,14 @@ namespace Blazorise
 
         string CarouselSlideActive( bool active );
 
+        string CarouselSlideSlidingLeft( bool left );
+
+        string CarouselSlideSlidingRight( bool right );
+
+        string CarouselSlideSlidingPrev( bool previous );
+
+        string CarouselSlideSlidingNext( bool next );
+
         string CarouselIndicators();
 
         string CarouselIndicator();
@@ -445,8 +535,6 @@ namespace Blazorise
 
         string CardWhiteText();
 
-        string CardBackground( Background background );
-
         string CardActions();
 
         string CardBody();
@@ -479,9 +567,13 @@ namespace Blazorise
 
         string ListGroupItem();
 
+        string ListGroupItemSelectable();
+
         string ListGroupItemActive();
 
         string ListGroupItemDisabled();
+
+        string ListGroupItemColor( Color color );
 
         #endregion
 
@@ -513,7 +605,7 @@ namespace Blazorise
 
         #region Container
 
-        string Container();
+        string Container( Breakpoint breakpoint );
 
         string ContainerFluid();
 
@@ -523,7 +615,7 @@ namespace Blazorise
 
         string Bar();
 
-        string BarBackground( Background background );
+        string BarInitial( bool initial );
 
         string BarAlignment( Alignment alignment );
 
@@ -533,7 +625,7 @@ namespace Blazorise
 
         string BarMode( BarMode mode );
 
-        string BarItem( BarMode mode );
+        string BarItem( BarMode mode, bool hasDropdown );
 
         string BarItemActive( BarMode mode );
 
@@ -563,13 +655,15 @@ namespace Blazorise
 
         //string BarHasDropdown();
 
-        string BarDropdown( BarMode mode );
+        string BarDropdown( BarMode mode, bool isBarDropDownSubmenu );
 
         string BarDropdownShow( BarMode mode );
 
-        string BarDropdownToggle( BarMode mode );
+        string BarDropdownToggle( BarMode mode, bool isBarDropDownSubmenu );
 
         string BarDropdownItem( BarMode mode );
+
+        string BarDropdownDivider( BarMode mode );
 
         string BarTogglerIcon( BarMode mode );
 
@@ -595,23 +689,27 @@ namespace Blazorise
 
         #region Collapse
 
-        string Collapse();
+        string Collapse( bool accordion );
 
-        string CollapseActive( bool active );
+        string CollapseActive( bool accordion, bool active );
 
-        string CollapseHeader();
+        string CollapseHeader( bool accordion );
 
-        string CollapseBody();
+        string CollapseBody( bool accordion );
 
-        string CollapseBodyActive( bool active );
+        string CollapseBodyActive( bool accordion, bool active );
 
-        string CollapseBodyContent();
+        string CollapseBodyContent( bool accordion );
 
         #endregion
 
         #region Row
 
         string Row();
+
+        string RowColumns( RowColumnsSize rowColumnsSize, RowColumnsDefinition rowColumnsDefinition );
+
+        string RowNoGutters();
 
         #endregion
 
@@ -625,9 +723,9 @@ namespace Blazorise
 
         #region Display
 
-        string Display( DisplayType displayType, Breakpoint breakpoint, DisplayDirection direction );
+        string Display( DisplayType displayType, DisplayDefinition displayDefinition );
 
-        string Display( DisplayType displayType, IEnumerable<(Breakpoint breakpoint, DisplayDirection direction)> rules );
+        string Display( DisplayType displayType, IEnumerable<DisplayDefinition> displayDefinitions );
 
         #endregion
 
@@ -659,6 +757,8 @@ namespace Blazorise
 
         string ModalFade();
 
+        string ModalFade( bool animation );
+
         string ModalVisible( bool visible );
 
         string ModalBackdrop();
@@ -671,7 +771,11 @@ namespace Blazorise
 
         string ModalContentSize( ModalSize modalSize );
 
-        string ModalContentCentered();
+        string ModalContentFullscreen( bool fullscreen );
+
+        string ModalContentCentered( bool centered );
+
+        string ModalContentScrollable( bool scrollable );
 
         string ModalBody();
 
@@ -709,11 +813,19 @@ namespace Blazorise
 
         string ProgressSize( Size size );
 
+        string ProgressColor( Color color );
+
+        string ProgressStriped();
+
+        string ProgressAnimated();
+
+        string ProgressWidth( int width );
+
         string ProgressBar();
 
         string ProgressBarSize( Size size );
 
-        string ProgressBarColor( Background background );
+        string ProgressBarColor( Color color );
 
         string ProgressBarStriped();
 
@@ -732,14 +844,6 @@ namespace Blazorise
         #region Colors
 
         string BackgroundColor( Background background );
-
-        #endregion
-
-        #region Title
-
-        string Title();
-
-        string TitleSize( int size );
 
         #endregion
 
@@ -765,8 +869,6 @@ namespace Blazorise
 
         string TableHeaderCell();
 
-        string TableHeaderCellTextAlignment( TextAlignment textAlignment );
-
         string TableFooter();
 
         string TableBody();
@@ -774,10 +876,6 @@ namespace Blazorise
         string TableRow();
 
         string TableRowColor( Color color );
-
-        string TableRowBackground( Background background );
-
-        string TableRowTextColor( TextColor textColor );
 
         string TableRowHoverCursor();
 
@@ -789,13 +887,9 @@ namespace Blazorise
 
         string TableRowCellColor( Color color );
 
-        string TableRowCellBackground( Background background );
-
-        string TableRowCellTextColor( TextColor textColor );
-
-        string TableRowCellTextAlignment( TextAlignment textAlignment );
-
         string TableResponsive();
+
+        string TableFixedHeader();
 
         #endregion
 
@@ -833,7 +927,15 @@ namespace Blazorise
 
         string TextWeight( TextWeight textWeight );
 
+        string TextOverflow( TextOverflow textOverflow );
+
         string TextItalic();
+
+        #endregion
+
+        #region Code
+
+        string Code();
 
         #endregion
 
@@ -857,6 +959,14 @@ namespace Blazorise
 
         #endregion
 
+        #region Blockquote
+
+        string Blockquote();
+
+        string BlockquoteFooter();
+
+        #endregion
+
         #region Figure
 
         string Figure();
@@ -868,6 +978,14 @@ namespace Blazorise
         string FigureImageRounded();
 
         string FigureCaption();
+
+        #endregion
+
+        #region Image
+
+        string Image();
+
+        string ImageFluid( bool fluid );
 
         #endregion
 
@@ -887,7 +1005,7 @@ namespace Blazorise
 
         string Tooltip();
 
-        string TooltipPlacement( Placement placement );
+        string TooltipPlacement( TooltipPlacement tooltipPlacement );
 
         string TooltipMultiline();
 
@@ -929,15 +1047,97 @@ namespace Blazorise
 
         #endregion
 
+        #region Borders
+
+        string Border( BorderSize borderSize, BorderSide borderSide, BorderColor borderColor );
+
+        string Border( BorderSize borderSize, IEnumerable<(BorderSide borderSide, BorderColor borderColor)> rules );
+
+        string BorderRadius( BorderRadius borderRadius );
+
+        #endregion
+
         #region Flex
 
+        string Flex( FlexType flexType );
+
+        string Flex( FlexDefinition flexDefinition );
+
+        string Flex( FlexType flexType, IEnumerable<FlexDefinition> flexDefinitions );
+
         string FlexAlignment( Alignment alignment );
+
+        #endregion
+
+        #region Sizing
+
+        string Sizing( SizingType sizingType, SizingSize sizingSize, SizingDefinition sizingDefinition );
+
+        #endregion
+
+        #region Float
+
+        string Float( Float @float );
+
+        string Clearfix();
+
+        #endregion
+
+        #region Visibility
+
+        string Visibility( Visibility visibility );
+
+        #endregion
+
+        #region VerticalAlignment
+
+        string VerticalAlignment( VerticalAlignment verticalAlignment );
+
+        #endregion
+
+        #region Shadow
+
+        string Shadow( Shadow shadow );
+
+        #endregion
+
+        #region Overflow
+
+        string Overflow( OverflowType overflowType, OverflowType secondOverflowType );
+
+        #endregion
+
+        #region Position
+
+        string Position( PositionType positionType, PositionEdgeType edgeType, int edgeOffset, PositionTranslateType translateType );
+
+        string Position( PositionType positionType, IEnumerable<(PositionEdgeType edgeType, int edgeOffset)> edges, PositionTranslateType translateType );
 
         #endregion
 
         #region Custom
 
         string Casing( CharacterCasing characterCasing );
+
+        #endregion
+
+        #region Elements
+
+        string UnorderedList();
+
+        string UnorderedListUnstyled( bool unstyled );
+
+        string OrderedList();
+
+        string OrderedListUnstyled( bool unstyled );
+
+        string OrderedListType( OrderedListType orderedListType );
+
+        string DescriptionList();
+
+        string DescriptionListTerm();
+
+        string DescriptionListDefinition();
 
         #endregion
 
@@ -954,13 +1154,15 @@ namespace Blazorise
 
         string ToColor( Color color );
 
-        string ToBackground( Background color );
+        string ToBackground( Background background );
 
         string ToTextColor( TextColor textColor );
 
         string ToThemeContrast( ThemeContrast themeContrast );
 
         string ToFloat( Float @float );
+
+        string ToBorderRadius( BorderRadius borderRadius );
 
         string ToSpacing( Spacing spacing );
 
@@ -973,6 +1175,8 @@ namespace Blazorise
         string ToTextTransform( TextTransform textTransform );
 
         string ToTextWeight( TextWeight textWeight );
+
+        string ToTextOverflow( TextOverflow textOverflow );
 
         string ToColumnWidth( ColumnWidth columnWidth );
 
@@ -996,6 +1200,8 @@ namespace Blazorise
 
         string ToPlacement( Placement placement );
 
+        string ToTooltipPlacement( TooltipPlacement tooltipPlacement );
+
         string ToFigureSize( FigureSize figureSize );
 
         string ToCharacterCasing( CharacterCasing characterCasing );
@@ -1003,6 +1209,40 @@ namespace Blazorise
         string ToBarMode( BarMode mode );
 
         string ToBarCollapsedMode( BarCollapseMode collapseMode );
+
+        string ToDirection( FlexDirection direction );
+
+        string ToJustifyContent( FlexJustifyContent justifyContent );
+
+        string ToAlignItems( FlexAlignItems alignItems );
+
+        string ToAlignSelf( FlexAlignSelf alignSelf );
+
+        string ToAlignContent( FlexAlignContent alignContent );
+
+        string ToGrowShrink( FlexGrowShrink growShrink );
+
+        string ToGrowShrinkSize( FlexGrowShrinkSize growShrinkSize );
+
+        string ToWrap( FlexWrap wrap );
+
+        string ToOrder( FlexOrder order );
+
+        string ToSizingType( SizingType sizingType );
+
+        string ToSizingSize( SizingSize sizingSize );
+
+        string ToVerticalAlignment( VerticalAlignment verticalAlignment );
+
+        string ToShadow( Shadow shadow );
+
+        string ToOrderedListType( OrderedListType orderedListType );
+
+        string ToPositionType( PositionType positionType );
+
+        string ToPositionEdgeType( PositionEdgeType positionEdgeType );
+
+        string ToPositionTranslateType( PositionTranslateType positionTranslateType );
 
         #endregion
 
@@ -1016,4 +1256,5 @@ namespace Blazorise
         /// </summary>
         string Provider { get; }
     }
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 }

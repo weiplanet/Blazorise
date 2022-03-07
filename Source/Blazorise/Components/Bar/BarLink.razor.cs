@@ -35,7 +35,7 @@ namespace Blazorise
         /// <returns>A task that represents the asynchronous operation.</returns>
         protected Task ClickHandler()
         {
-            return Clicked.InvokeAsync( null );
+            return Clicked.InvokeAsync();
         }
 
         #endregion
@@ -55,7 +55,7 @@ namespace Blazorise
         /// <summary>
         /// The target attribute specifies where to open the linked document.
         /// </summary>
-        [Parameter] public Target Target { get; set; } = Target.None;
+        [Parameter] public Target Target { get; set; } = Target.Default;
 
         /// <summary>
         /// URL matching behavior for a link.
@@ -66,6 +66,11 @@ namespace Blazorise
         /// Specify extra information about the element.
         /// </summary>
         [Parameter] public string Title { get; set; }
+
+        /// <summary>
+        /// Specifies the content to be rendered inside this <see cref="BarLink"/>.
+        /// </summary>
+        [Parameter] public RenderFragment ChildContent { get; set; }
 
         /// <summary>
         /// Cascaded <see cref="Bar"/> component state object.
@@ -84,11 +89,6 @@ namespace Blazorise
                 DirtyClasses();
             }
         }
-
-        /// <summary>
-        /// Specifies the content to be rendered inside this <see cref="BarLink"/>.
-        /// </summary>
-        [Parameter] public RenderFragment ChildContent { get; set; }
 
         #endregion
     }

@@ -1,7 +1,7 @@
 ﻿#region Using directives
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using Blazorise.Localization;
 #endregion
 
@@ -21,12 +21,12 @@ namespace Blazorise.DataGrid
         {
             switch ( direction )
             {
-                case SortDirection.None:
+                case SortDirection.Default:
                     return SortDirection.Ascending;
                 case SortDirection.Ascending:
                     return SortDirection.Descending;
                 default:
-                    return SortDirection.None;
+                    return SortDirection.Default;
             }
         }
 
@@ -45,5 +45,25 @@ namespace Blazorise.DataGrid
 
             return textLocalizer[name, arguments];
         }
+
+
+        /// <summary>
+        /// Checks if a type is a collection.
+        /// </summary>
+        /// <param name="type">Type to check.</param>
+        /// <returns>True if <paramref name="type"/> is a collection.</returns>
+        public static bool IsCollection( this Type type )
+            => typeof( ICollection ).IsAssignableFrom( type )
+                || type.IsGenericCollection()
+                || type.IsGenericIEnumerable()
+                || Array.Find( type.GetInterfaces(), IsGenericCollection ) != null;
+
+        private static bool IsGenericCollection( this Type type )
+            => type.IsGenericType
+                && type.GetGenericTypeDefinition() == typeof( ICollection<> );
+
+        private static bool IsGenericIEnumerable( this Type type )
+            => type.IsGenericType
+                && type.GetGenericTypeDefinition() == typeof( IEnumerable<> );
     }
 }

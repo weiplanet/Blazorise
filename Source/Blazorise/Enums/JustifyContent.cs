@@ -1,7 +1,4 @@
-﻿#region Using directives
-#endregion
-
-namespace Blazorise
+﻿namespace Blazorise
 {
     /// <summary>
     /// Aligns the flexible container's items when the items do not use all available space on the main-axis (horizontally).
@@ -11,7 +8,7 @@ namespace Blazorise
         /// <summary>
         /// Sets this property to its default value.
         /// </summary>
-        None,
+        Default,
 
         /// <summary>
         /// Items are positioned at the beginning of the container.

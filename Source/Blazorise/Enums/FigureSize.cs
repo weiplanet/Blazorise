@@ -1,7 +1,4 @@
-﻿#region Using directives
-#endregion
-
-namespace Blazorise
+﻿namespace Blazorise
 {
     /// <summary>
     /// Defines a figure size in pixels.
@@ -11,7 +8,7 @@ namespace Blazorise
         /// <summary>
         /// No sizing will be applied.
         /// </summary>
-        None = 0,
+        Default = 0,
 
         /// <summary>
         /// 16x16px

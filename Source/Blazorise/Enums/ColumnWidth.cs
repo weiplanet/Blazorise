@@ -1,7 +1,4 @@
-﻿#region Using directives
-#endregion
-
-namespace Blazorise
+﻿namespace Blazorise
 {
     /// <summary>
     /// Defines number of columns to occupy in the grid.
@@ -9,9 +6,9 @@ namespace Blazorise
     public enum ColumnWidth
     {
         /// <summary>
-        /// No sizing.
+        /// No sizing, meaning the default spacing will be used.
         /// </summary>
-        None,
+        Default,
 
         /// <summary>
         /// One column width.

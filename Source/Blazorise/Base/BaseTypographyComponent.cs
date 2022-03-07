@@ -1,4 +1,7 @@
 ﻿#region Using directives
+using System;
+using System.Threading.Tasks;
+using Blazorise.Modules;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
 #endregion
@@ -10,15 +13,7 @@ namespace Blazorise
     /// </summary>
     public abstract class BaseTypographyComponent : BaseComponent
     {
-        #region Members
-
-        private TextColor color = TextColor.None;
-
-        private TextAlignment alignment = TextAlignment.Left;
-
-        private TextTransform textTransform = TextTransform.None;
-
-        private TextWeight textWeight = TextWeight.None;
+        #region Members       
 
         private bool italic = false;
 
@@ -26,15 +21,22 @@ namespace Blazorise
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
-            builder.Append( ClassProvider.TextColor( Color ), Color != TextColor.None );
-            builder.Append( ClassProvider.TextAlignment( Alignment ), Alignment != TextAlignment.None );
-            builder.Append( ClassProvider.TextTransform( Transform ), Transform != TextTransform.None );
-            builder.Append( ClassProvider.TextWeight( Weight ), Weight != TextWeight.None );
             builder.Append( ClassProvider.TextItalic(), Italic );
 
             base.BuildClasses( builder );
+        }
+
+        /// <summary>
+        /// Handles the component click event.
+        /// </summary>
+        /// <returns></returns>
+        protected async Task OnClickHandler()
+        {
+            if ( CopyToClipboard )
+                await JSUtilitiesModule.CopyToClipboard( ElementRef, ElementId );
         }
 
         #endregion
@@ -42,64 +44,9 @@ namespace Blazorise
         #region Properties
 
         /// <summary>
-        /// Gets or sets the text color.
+        /// Gets or sets the <see cref="IJSUtilitiesModule"/> instance.
         /// </summary>
-        [Parameter]
-        public TextColor Color
-        {
-            get => color;
-            set
-            {
-                color = value;
-
-                DirtyClasses();
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the text alignment.
-        /// </summary>
-        [Parameter]
-        public TextAlignment Alignment
-        {
-            get => alignment;
-            set
-            {
-                alignment = value;
-
-                DirtyClasses();
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the text transformation.
-        /// </summary>
-        [Parameter]
-        public TextTransform Transform
-        {
-            get => textTransform;
-            set
-            {
-                textTransform = value;
-
-                DirtyClasses();
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the text weight.
-        /// </summary>
-        [Parameter]
-        public TextWeight Weight
-        {
-            get => textWeight;
-            set
-            {
-                textWeight = value;
-
-                DirtyClasses();
-            }
-        }
+        [Inject] public IJSUtilitiesModule JSUtilitiesModule { get; set; }
 
         /// <summary>
         /// Italicize text if set to true.
@@ -116,6 +63,14 @@ namespace Blazorise
             }
         }
 
+        /// <summary>
+        /// If true, the content of the component will be copied to clipboard on click event.
+        /// </summary>
+        [Parameter] public bool CopyToClipboard { get; set; }
+
+        /// <summary>
+        /// Specifies the content to be rendered inside this component.
+        /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
 
         #endregion

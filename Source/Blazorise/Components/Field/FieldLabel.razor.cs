@@ -18,10 +18,10 @@ namespace Blazorise
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
-            builder.Append( ClassProvider.FieldLabel() );
-            builder.Append( ClassProvider.FieldLabelHorizontal(), IsHorizontal );
+            builder.Append( ClassProvider.FieldLabel( IsHorizontal ) );
             builder.Append( ClassProvider.ToScreenreader( Screenreader ), Screenreader != Screenreader.Always );
 
             base.BuildClasses( builder );
@@ -51,6 +51,9 @@ namespace Blazorise
             }
         }
 
+        /// <summary>
+        /// Gets or sets the reference to the parent <see cref="FieldLabel"/> component.
+        /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
 
         #endregion

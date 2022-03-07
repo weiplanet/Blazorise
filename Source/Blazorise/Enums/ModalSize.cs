@@ -1,7 +1,4 @@
-﻿#region Using directives
-#endregion
-
-namespace Blazorise
+﻿namespace Blazorise
 {
     /// <summary>
     /// Changes the size of the modal.
@@ -27,5 +24,10 @@ namespace Blazorise
         /// Extra large modal.
         /// </summary>
         ExtraLarge,
+
+        /// <summary>
+        /// Defines the modal that covers the user viewport.
+        /// </summary>
+        Fullscreen,
     }
 }

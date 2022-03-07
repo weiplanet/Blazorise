@@ -1,5 +1,4 @@
 ﻿#region Using directives
-using System;
 using Microsoft.AspNetCore.Components;
 #endregion
 
@@ -53,6 +52,11 @@ namespace Blazorise.Snackbar
         /// <summary>
         /// Time in millisecond until snackbar is automatically closed.
         /// </summary>
-        public double IntervalBeforeClose { get; set; }
+        public double? IntervalBeforeClose { get; set; }
+
+        /// <summary>
+        /// Defines if the snackbar will contain multiple lines.
+        /// </summary>
+        public bool Multiline { get; set; }
     }
 }

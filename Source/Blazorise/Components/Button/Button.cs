@@ -1,7 +1,9 @@
 ﻿#region Using directives
+using System;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Blazorise.Extensions;
+using Blazorise.Modules;
 using Blazorise.States;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
@@ -13,13 +15,13 @@ namespace Blazorise
     /// <summary>
     /// Clickable button for actions in forms, dialogs, and more with support for multiple sizes, states, and more.
     /// </summary>
-    public partial class Button : BaseComponent
+    public partial class Button : BaseComponent, IAsyncDisposable
     {
         #region Members
 
-        private Color color = Color.None;
+        private Color color = Color.Default;
 
-        private Size size = Size.None;
+        private Size? size;
 
         private bool outline;
 
@@ -33,6 +35,12 @@ namespace Blazorise
 
         private DropdownState parentDropdownState;
 
+        private ICommand command;
+
+        private object commandParameter;
+
+        private bool? canExecuteCommand;
+
         #endregion
 
         #region Methods
@@ -41,11 +49,12 @@ namespace Blazorise
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.Button() );
-            builder.Append( ClassProvider.ButtonColor( Color ), Color != Color.None && !Outline );
-            builder.Append( ClassProvider.ButtonOutline( Color ), Color != Color.None && Outline );
-            builder.Append( ClassProvider.ButtonSize( Size ), Size != Size.None );
+            builder.Append( ClassProvider.ButtonColor( Color ), Color != Color.Default && !Outline );
+            builder.Append( ClassProvider.ButtonOutline( Color ), Color != Color.Default && Outline );
+            builder.Append( ClassProvider.ButtonSize( ThemeSize ), ThemeSize != Blazorise.Size.Default );
             builder.Append( ClassProvider.ButtonBlock(), Block );
             builder.Append( ClassProvider.ButtonActive(), Active );
+            builder.Append( ClassProvider.ButtonDisabled(), Disabled );
             builder.Append( ClassProvider.ButtonLoading(), Loading && LoadingTemplate == null );
 
             base.BuildClasses( builder );
@@ -58,16 +67,21 @@ namespace Blazorise
             ParentDropdown?.NotifyButtonInitialized( this );
 
             // notify addons that the button is inside of it
-            ParentAddons?.Register( this );
+            ParentAddons?.NotifyButtonInitialized( this );
 
             ExecuteAfterRender( async () =>
             {
-                await JSRunner.InitializeButton( ElementRef, ElementId, PreventDefaultOnSubmit );
+                await JSModule.Initialize( ElementRef, ElementId, new
+                {
+                    PreventDefaultOnSubmit
+                } );
             } );
 
-            if ( LoadingTemplate == null )
+            LoadingTemplate ??= ProvideDefaultLoadingTemplate();
+
+            if ( Theme != null )
             {
-                LoadingTemplate = ProvideDefaultLoadingTemplate();
+                Theme.Changed += OnThemeChanged;
             }
 
             base.OnInitialized();
@@ -80,21 +94,31 @@ namespace Blazorise
         protected virtual RenderFragment ProvideDefaultLoadingTemplate() => null;
 
         /// <inheritdoc/>
-        protected override void Dispose( bool disposing )
+        protected override async ValueTask DisposeAsync( bool disposing )
         {
             if ( disposing )
             {
                 // remove button from parents
                 ParentDropdown?.NotifyButtonRemoved( this );
-                ParentAddons?.UnRegister( this );
+                ParentAddons?.NotifyButtonRemoved( this );
 
                 if ( Rendered )
                 {
-                    JSRunner.DestroyButton( ElementId );
+                    await JSModule.SafeDestroy( ElementRef, ElementId );
+                }
+
+                if ( command != null )
+                {
+                    command.CanExecuteChanged -= OnCanExecuteChanged;
+                }
+
+                if ( Theme != null )
+                {
+                    Theme.Changed -= OnThemeChanged;
                 }
             }
 
-            base.Dispose( disposing );
+            await base.DisposeAsync( disposing );
         }
 
         /// <summary>
@@ -105,12 +129,10 @@ namespace Blazorise
         {
             if ( !Disabled )
             {
-                await Clicked.InvokeAsync( null );
+                await Clicked.InvokeAsync();
 
-                if ( Command?.CanExecute( CommandParameter ) ?? false )
-                {
-                    Command.Execute( CommandParameter );
-                }
+                // Don't need to check CanExecute again is already part of Disabled check
+                Command?.Execute( CommandParameter );
             }
         }
 
@@ -118,11 +140,13 @@ namespace Blazorise
         /// Sets focus on the button element, if it can be focused.
         /// </summary>
         /// <param name="scrollToElement">If true the browser should scroll the document to bring the newly-focused element into view.</param>
-        public void Focus( bool scrollToElement = true )
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        public Task Focus( bool scrollToElement = true )
         {
-            _ = JSRunner.Focus( ElementRef, ElementId, scrollToElement );
+            return JSUtilitiesModule.Focus( ElementRef, ElementId, scrollToElement ).AsTask();
         }
 
+        /// <inheritdoc/>
         protected override void BuildRenderTree( RenderTreeBuilder builder )
         {
             builder
@@ -135,17 +159,23 @@ namespace Blazorise
                 .AriaPressed( Active )
                 .TabIndex( TabIndex );
 
-            if ( Type == ButtonType.Link && To != null )
+            if ( Type == ButtonType.Link )
             {
                 builder
                     .Role( "button" )
                     .Href( To )
                     .Target( Target );
+
+                if ( Disabled )
+                {
+                    builder
+                        .TabIndex( -1 )
+                        .AriaDisabled( "true" );
+                }
             }
-            else
-            {
-                builder.OnClick( this, EventCallback.Factory.Create( this, ClickHandler ) );
-            }
+
+            builder.OnClick( this, EventCallback.Factory.Create( this, ClickHandler ) );
+            builder.OnClickPreventDefault( Type == ButtonType.Link && To != null && To.StartsWith( "#" ) );
 
             builder.Attributes( Attributes );
             builder.ElementReferenceCapture( capturedRef => ElementRef = capturedRef );
@@ -162,6 +192,60 @@ namespace Blazorise
             builder.CloseElement();
 
             base.BuildRenderTree( builder );
+        }
+
+        private void BindCommand( ICommand value )
+        {
+            if ( command != null )
+            {
+                command.CanExecuteChanged -= OnCanExecuteChanged;
+            }
+
+            command = value;
+
+            if ( command != null )
+            {
+                command.CanExecuteChanged += OnCanExecuteChanged;
+            }
+
+            OnCanExecuteChanged( value, EventArgs.Empty );
+        }
+
+        /// <summary>
+        /// Occurs when changes occur that affect whether or not the command should execute.
+        /// </summary>
+        /// <param name="sender">Reference of the object that raised the event.</param>
+        /// <param name="eventArgs">Event arguments.</param>
+        protected virtual void OnCanExecuteChanged( object sender, EventArgs eventArgs )
+        {
+            var canExecute = Command?.CanExecute( CommandParameter );
+
+            if ( canExecute != canExecuteCommand )
+            {
+                canExecuteCommand = canExecute;
+
+                if ( Rendered )
+                {
+                    // in case some provider is using Disabled flag for custom styles
+                    DirtyStyles();
+                    DirtyClasses();
+
+                    InvokeAsync( StateHasChanged );
+                }
+            }
+        }
+
+        /// <summary>
+        /// An event raised when theme settings changes.
+        /// </summary>
+        /// <param name="sender">An object that raised the event.</param>
+        /// <param name="eventArgs"></param>
+        private void OnThemeChanged( object sender, EventArgs eventArgs )
+        {
+            DirtyClasses();
+            DirtyStyles();
+
+            InvokeAsync( StateHasChanged );
         }
 
         #endregion
@@ -185,6 +269,21 @@ namespace Blazorise
         /// True if button is placed inside of a <see cref="Field"/>.
         /// </summary>
         protected bool ParentIsField => ParentField != null;
+
+        /// <summary>
+        /// Gets the size based on the theme settings.
+        /// </summary>
+        protected Size ThemeSize => Size ?? Theme?.ButtonOptions?.Size ?? Blazorise.Size.Default;
+
+        /// <summary>
+        /// Gets or sets the <see cref="IJSButtonModule"/> instance.
+        /// </summary>
+        [Inject] public IJSButtonModule JSModule { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IJSUtilitiesModule"/> instance.
+        /// </summary>
+        [Inject] public IJSUtilitiesModule JSUtilitiesModule { get; set; }
 
         /// <summary>
         /// Occurs when the button is clicked.
@@ -215,7 +314,7 @@ namespace Blazorise
         /// Changes the size of a button.
         /// </summary>
         [Parameter]
-        public Size Size
+        public Size? Size
         {
             get => size;
             set
@@ -242,12 +341,12 @@ namespace Blazorise
         }
 
         /// <summary>
-        /// Makes button look inactive.
+        /// When set to 'true', disables the component's functionality and places it in a disabled state.
         /// </summary>
         [Parameter]
         public bool Disabled
         {
-            get => disabled;
+            get => disabled || !canExecuteCommand.GetValueOrDefault( true );
             set
             {
                 disabled = value;
@@ -257,7 +356,7 @@ namespace Blazorise
         }
 
         /// <summary>
-        /// Makes the button to appear as pressed.
+        /// When set to 'true', places the component in the active state with active styling.
         /// </summary>
         [Parameter]
         public bool Active
@@ -352,12 +451,30 @@ namespace Blazorise
         /// <summary>
         /// Gets or sets the command to be executed when clicked on a button.
         /// </summary>
-        [Parameter] public ICommand Command { get; set; }
+        [Parameter]
+        public ICommand Command
+        {
+            get => command;
+            set => BindCommand( value );
+        }
 
         /// <summary>
         /// Reflects the parameter to pass to the CommandProperty upon execution.
         /// </summary>
-        [Parameter] public object CommandParameter { get; set; }
+        [Parameter]
+        public object CommandParameter
+        {
+            get => commandParameter;
+            set
+            {
+                if ( commandParameter.IsEqual( value ) )
+                    return;
+
+                commandParameter = value;
+
+                OnCanExecuteChanged( this, EventArgs.Empty );
+            }
+        }
 
         /// <summary>
         /// Denotes the target route of the <see cref="ButtonType.Link"/> button.
@@ -367,7 +484,7 @@ namespace Blazorise
         /// <summary>
         /// The target attribute specifies where to open the linked document for a <see cref="ButtonType.Link"/>.
         /// </summary>
-        [Parameter] public Target Target { get; set; } = Target.None;
+        [Parameter] public Target Target { get; set; } = Target.Default;
 
         /// <summary>
         /// If defined, indicates that its element can be focused and can participates in sequential keyboard navigation.
@@ -378,6 +495,11 @@ namespace Blazorise
         /// Specifies the content to be rendered inside this <see cref="Button"/>.
         /// </summary>
         [Parameter] public RenderFragment ChildContent { get; set; }
+
+        /// <summary>
+        /// Cascaded theme settings.
+        /// </summary>
+        [CascadingParameter] public Theme Theme { get; set; }
 
         #endregion
     }

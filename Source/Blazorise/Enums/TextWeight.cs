@@ -1,7 +1,4 @@
-﻿#region Using directives
-#endregion
-
-namespace Blazorise
+﻿namespace Blazorise
 {
     /// <summary>
     /// Defines the text weight.
@@ -11,7 +8,7 @@ namespace Blazorise
         /// <summary>
         /// No weight will be applied.
         /// </summary>
-        None,
+        Default,
 
         /// <summary>
         /// Defines normal characters. This is default.

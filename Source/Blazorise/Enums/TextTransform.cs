@@ -1,7 +1,4 @@
-﻿#region Using directives
-#endregion
-
-namespace Blazorise
+﻿namespace Blazorise
 {
     /// <summary>
     /// Defines the text transformation.
@@ -11,7 +8,7 @@ namespace Blazorise
         /// <summary>
         /// No capitalization. The text renders as it is. This is default.
         /// </summary>
-        None,
+        Default,
 
         /// <summary>
         /// Transforms all characters to lowercase.

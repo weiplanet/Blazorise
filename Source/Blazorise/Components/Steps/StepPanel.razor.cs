@@ -1,4 +1,5 @@
 ﻿#region Using directives
+using System;
 using Blazorise.States;
 using Blazorise.Utilities;
 using Microsoft.AspNetCore.Components;
@@ -6,7 +7,10 @@ using Microsoft.AspNetCore.Components;
 
 namespace Blazorise
 {
-    public partial class StepPanel : BaseComponent
+    /// <summary>
+    /// <see cref="Step"/> content area that is linked with a <see cref="Step"/> with the same name and that is placed within the <see cref="Steps"/> component.
+    /// </summary>
+    public partial class StepPanel : BaseComponent, IDisposable
     {
         #region Members
 
@@ -18,39 +22,30 @@ namespace Blazorise
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void OnInitialized()
         {
-            if ( ParentSteps != null )
-            {
-                ParentSteps.NotifyStepInitialized( Name );
-            }
+            ParentSteps?.NotifyStepInitialized( Name );
 
-            if ( ParentStepsContent != null )
-            {
-                ParentStepsContent.NotifyStepPanelInitialized( Name );
-            }
+            ParentStepsContent?.NotifyStepPanelInitialized( Name );
 
             base.OnInitialized();
         }
 
+        /// <inheritdoc/>
         protected override void Dispose( bool disposing )
         {
             if ( disposing )
             {
-                if ( ParentSteps != null )
-                {
-                    ParentSteps.NotifyStepRemoved( Name );
-                }
+                ParentSteps?.NotifyStepRemoved( Name );
 
-                if ( ParentStepsContent != null )
-                {
-                    ParentStepsContent.NotifyStepPanelRemoved( Name );
-                }
+                ParentStepsContent?.NotifyStepPanelRemoved( Name );
             }
 
             base.Dispose( disposing );
         }
 
+        /// <inheritdoc/>
         protected override void BuildClasses( ClassBuilder builder )
         {
             builder.Append( ClassProvider.StepPanel() );
@@ -63,13 +58,24 @@ namespace Blazorise
 
         #region Properties
 
+        /// <summary>
+        /// True if the step panel is currently selected.
+        /// </summary>
         protected bool Active => ParentStepsState?.SelectedStep == Name || ParentStepsContentStore?.SelectedPanel == Name;
 
         /// <summary>
-        /// Defines the panel name. Must match the coresponding step name.
+        /// Defines the panel name. Must match the corresponding step name.
         /// </summary>
         [Parameter] public string Name { get; set; }
 
+        /// <summary>
+        /// Specifies the content to be rendered inside this <see cref="StepPanel"/>.
+        /// </summary>
+        [Parameter] public RenderFragment ChildContent { get; set; }
+
+        /// <summary>
+        /// Cascaded <see cref="Steps"/> component state object.
+        /// </summary>
         [CascadingParameter]
         protected StepsState ParentStepsState
         {
@@ -85,6 +91,9 @@ namespace Blazorise
             }
         }
 
+        /// <summary>
+        /// Cascaded <see cref="StepsContent"/> component state object.
+        /// </summary>
         [CascadingParameter]
         protected StepsContentState ParentStepsContentStore
         {
@@ -100,11 +109,15 @@ namespace Blazorise
             }
         }
 
+        /// <summary>
+        /// Gets or sets the reference to the parent <see cref="Steps"/> component.
+        /// </summary>
         [CascadingParameter] protected Steps ParentSteps { get; set; }
 
+        /// <summary>
+        /// Gets or sets the reference to the parent <see cref="StepsContent"/> component.
+        /// </summary>
         [CascadingParameter] protected StepsContent ParentStepsContent { get; set; }
-
-        [Parameter] public RenderFragment ChildContent { get; set; }
 
         #endregion
     }
